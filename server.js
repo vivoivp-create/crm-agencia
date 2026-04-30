@@ -173,6 +173,19 @@ app.get('/webhook', (req, res) => {
   }
 });
 
+// Funcao para corrigir numero brasileiro sem o nono digito
+function corrigirTelefone(telefone) {
+  // Numero brasileiro com DDI 55 + DDD 2 digitos + numero 8 digitos = 12 digitos (sem o nono)
+  if (telefone.startsWith('55') && telefone.length === 12) {
+    const ddd = telefone.slice(2, 4);
+    const numero = telefone.slice(4);
+    const telefoneCorrigido = '55' + ddd + '9' + numero;
+    console.log(`Numero corrigido: ${telefone} -> ${telefoneCorrigido}`);
+    return telefoneCorrigido;
+  }
+  return telefone;
+}
+
 app.post('/webhook', async (req, res) => {
   try {
     console.log('POST webhook recebido:', JSON.stringify(req.body).substring(0, 300));
@@ -182,26 +195,38 @@ app.post('/webhook', async (req, res) => {
     const contact = change?.value?.contacts?.[0];
     console.log('Message:', JSON.stringify(message));
     console.log('Contact:', JSON.stringify(contact));
+
     if (!message || message.type !== 'text') {
       console.log('Ignorando - nao e texto');
       return res.sendStatus(200);
     }
-    const telefone = message.from;
+
+    // Corrige o numero antes de qualquer operacao
+    const telefoneOriginal = message.from;
+    const telefone = corrigirTelefone(telefoneOriginal);
+
     const texto = message.text.body;
     const nomeWhatsapp = contact?.profile?.name || 'Desconhecido';
     console.log('Processando:', telefone, nomeWhatsapp, texto);
+
     let contato = await pool.query('SELECT * FROM contatos WHERE telefone=$1', [telefone]);
+    if (contato.rows.length === 0) {
+      // Tenta tambem pelo numero original (sem correcao) para nao duplicar contatos
+      contato = await pool.query('SELECT * FROM contatos WHERE telefone=$1', [telefoneOriginal]);
+    }
     if (contato.rows.length === 0) {
       contato = await pool.query(
         `INSERT INTO contatos (nome, telefone, origem, status) VALUES ($1,$2,'whatsapp','novo') RETURNING *`,
         [nomeWhatsapp, telefone]
       );
     }
+
     const contatoId = contato.rows[0].id;
     await pool.query(
       `INSERT INTO conversas (contato_id, mensagem, direcao, canal, lida) VALUES ($1,$2,'entrada','whatsapp',false)`,
       [contatoId, texto]
     );
+
     console.log('Chamando Claude...');
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -217,15 +242,18 @@ app.post('/webhook', async (req, res) => {
         messages: [{ role: 'user', content: texto }]
       })
     });
+
     const claudeData = await claudeRes.json();
     console.log('Claude status:', claudeRes.status, JSON.stringify(claudeData).substring(0, 200));
     const resposta = claudeData.content?.[0]?.text;
+
     if (resposta) {
       await pool.query(
         `INSERT INTO conversas (contato_id, mensagem, direcao, canal) VALUES ($1,$2,'saida','whatsapp')`,
         [contatoId, resposta]
       );
-      console.log('Enviando WhatsApp. Token:', process.env.WHATSAPP_TOKEN?.substring(0, 15));
+
+      console.log('Enviando WhatsApp para:', telefone, '| Token:', process.env.WHATSAPP_TOKEN?.substring(0, 15));
       const waRes = await fetch(`https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
         method: 'POST',
         headers: {
@@ -239,9 +267,11 @@ app.post('/webhook', async (req, res) => {
           text: { body: resposta }
         })
       });
+
       const waData = await waRes.json();
       console.log('WhatsApp resposta:', JSON.stringify(waData).substring(0, 200));
     }
+
     res.sendStatus(200);
   } catch (err) {
     console.error('Erro webhook:', err);
