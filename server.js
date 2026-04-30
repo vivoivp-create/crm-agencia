@@ -224,7 +224,7 @@ app.get('/webhook', (req, res) => {
 });
 
 app.post('/webhook', async (req, res) => {
-  try {
+  try {console.log('Webhook recebido:', JSON.stringify(req.body));
     const entry = req.body?.entry?.[0];
     const change = entry?.changes?.[0];
     const message = change?.value?.messages?.[0];
@@ -285,6 +285,7 @@ Sempre finalize convidando o cliente a conversar com um especialista da equipe.`
       );
 
       // Envia pelo WhatsApp
+      console.log('Enviando resposta WhatsApp. Token:', process.env.WHATSAPP_TOKEN?.substring(0,20));
       await fetch(`https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
         method: 'POST',
         headers: {
