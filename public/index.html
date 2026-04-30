@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgênciaCRM</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f5f4;
+    --bg2: #ffffff;
+    --bg3: #f0efed;
+    --text: #1c1c1a;
+    --text2: #6b6b67;
+    --text3: #9b9b96;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --green: #1D9E75; --green-bg: #E1F5EE; --green-text: #085041;
+    --blue: #185FA5; --blue-bg: #E6F1FB; --blue-text: #0C447C;
+    --amber: #854F0B; --amber-bg: #FAEEDA; --amber-text: #633806;
+    --red: #A32D2D; --red-bg: #FCEBEB; --red-text: #791F1F;
+    --purple: #534AB7; --purple-bg: #EEEDFE; --purple-text: #3C3489;
+    --radius: 8px; --radius-lg: 12px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+  .app { display: flex; height: 100vh; }
+
+  /* SIDEBAR */
+  .sidebar { width: 210px; background: var(--bg2); border-right: 0.5px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+  .logo { padding: 20px 18px 16px; border-bottom: 0.5px solid var(--border); }
+  .logo-name { font-size: 15px; font-weight: 600; color: var(--text); }
+  .logo-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .nav { padding: 10px 0; flex: 1; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 18px; cursor: pointer; font-size: 13px; color: var(--text2); transition: background 0.15s; }
+  .nav-item:hover { background: var(--bg3); }
+  .nav-item.active { background: var(--bg3); color: var(--text); font-weight: 500; }
+  .nav-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .nav-badge { margin-left: auto; background: var(--green-bg); color: var(--green-text); font-size: 10px; padding: 2px 6px; border-radius: 20px; font-weight: 600; }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { padding: 14px 22px; background: var(--bg2); border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .page-title { font-size: 15px; font-weight: 600; }
+  .search { padding: 6px 12px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg3); font-size: 13px; color: var(--text); outline: none; width: 200px; }
+  .search:focus { border-color: var(--blue); background: var(--bg2); }
+  .btn { padding: 7px 14px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: transparent; cursor: pointer; font-size: 12px; color: var(--text); font-family: inherit; transition: background 0.15s; }
+  .btn:hover { background: var(--bg3); }
+  .btn-primary { background: var(--text); color: var(--bg2); border-color: var(--text); }
+  .btn-primary:hover { opacity: 0.85; background: var(--text); }
+  .content { flex: 1; overflow-y: auto; padding: 22px; }
+
+  /* CARDS */
+  .card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 18px; }
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .metric { background: var(--bg3); border-radius: var(--radius); padding: 14px 16px; }
+  .metric-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .metric-value { font-size: 24px; font-weight: 600; color: var(--text); }
+  .metric-delta { font-size: 11px; color: var(--green); margin-top: 3px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 14px; }
+
+  /* BADGES */
+  .badge { font-size: 10px; padding: 3px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+  .badge-novo { background: var(--blue-bg); color: var(--blue-text); }
+  .badge-qualificado { background: var(--green-bg); color: var(--green-text); }
+  .badge-proposta { background: var(--amber-bg); color: var(--amber-text); }
+  .badge-negociacao { background: var(--purple-bg); color: var(--purple-text); }
+  .badge-cliente { background: var(--green-bg); color: var(--green-text); }
+  .badge-perdido { background: var(--red-bg); color: var(--red-text); }
+  .badge-iniciando { background: var(--blue-bg); color: var(--blue-text); }
+  .badge-andamento { background: var(--amber-bg); color: var(--amber-text); }
+  .badge-concluido { background: var(--green-bg); color: var(--green-text); }
+
+  /* TABELA DE CONTATOS */
+  .contact-list { display: flex; flex-direction: column; }
+  .contact-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--border); cursor: pointer; }
+  .contact-row:last-child { border-bottom: none; }
+  .contact-row:hover { background: var(--bg3); margin: 0 -6px; padding: 10px 6px; border-radius: var(--radius); }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+  .contact-info { flex: 1; min-width: 0; }
+  .contact-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .contact-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .contact-actions { display: flex; gap: 6px; align-items: center; }
+
+  /* FUNIL */
+  .funnel-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .funnel-label { font-size: 11px; color: var(--text2); width: 85px; flex-shrink: 0; }
+  .funnel-bar-wrap { flex: 1; height: 24px; background: var(--bg3); border-radius: var(--radius); overflow: hidden; }
+  .funnel-bar { height: 100%; border-radius: var(--radius); display: flex; align-items: center; padding-left: 10px; font-size: 11px; font-weight: 600; }
+  .funnel-count { font-size: 11px; color: var(--text3); width: 24px; text-align: right; flex-shrink: 0; }
+
+  /* CHAT */
+  .chat-list { display: flex; flex-direction: column; }
+  .chat-item { display: flex; align-items: center; gap: 10px; padding: 9px 6px; border-radius: var(--radius); cursor: pointer; }
+  .chat-item:hover { background: var(--bg3); }
+  .chat-info { flex: 1; min-width: 0; }
+  .chat-name { font-size: 13px; font-weight: 500; }
+  .chat-preview { font-size: 11px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .chat-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .chat-time { font-size: 10px; color: var(--text3); }
+  .unread { background: var(--green); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+
+  /* PROJETOS */
+  .project-card { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 0.5px solid var(--border); }
+  .project-card:last-child { border-bottom: none; }
+  .project-info { flex: 1; min-width: 0; }
+  .project-title { font-size: 13px; font-weight: 500; color: var(--text); }
+  .project-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .progress-wrap { width: 90px; flex-shrink: 0; }
+  .progress-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+  .progress-bar { height: 4px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 4px; border-radius: 4px; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .modal { background: var(--bg2); border-radius: var(--radius-lg); padding: 24px; width: 420px; max-width: 95vw; box-shadow: 0 8px 40px rgba(0,0,0,0.15); }
+  .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 18px; }
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 12px; color: var(--text2); margin-bottom: 5px; display: block; }
+  .form-input, .form-select, .form-textarea { width: 100%; padding: 8px 11px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg3); font-size: 13px; color: var(--text); font-family: inherit; outline: none; }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--blue); background: var(--bg2); }
+  .form-textarea { resize: vertical; min-height: 80px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+  .hidden { display: none !important; }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 40px; color: var(--text3); font-size: 13px; }
+  .loading { text-align: center; padding: 40px; color: var(--text3); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-name">AgênciaCRM</div>
+      <div class="logo-sub">Marketing</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" data-view="leads">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M8 8a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="1.3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Leads
+      </div>
+      <div class="nav-item" data-view="clientes">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M1 14c0-2.8 2.2-5 5-5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10 9l1.5 1.5L14 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Clientes
+      </div>
+      <div class="nav-item" data-view="whatsapp">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5C4.4 1.5 1.5 4.4 1.5 8c0 1.2.3 2.3.9 3.3L1.5 14.5l3.3-.9c1 .5 2.1.9 3.2.9 3.6 0 6.5-2.9 6.5-6.5S11.6 1.5 8 1.5z" stroke="currentColor" stroke-width="1.3"/></svg>
+        WhatsApp
+        <span class="nav-badge" id="unread-count" style="display:none">0</span>
+      </div>
+      <div class="nav-item" data-view="projetos">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 8h6M5 5h6M5 11h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Projetos
+      </div>
+    </nav>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <span class="page-title" id="page-title">Dashboard</span>
+        <input class="search hidden" id="search-input" type="text" placeholder="Buscar...">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" id="btn-refresh" onclick="loadCurrentView()">Atualizar</button>
+        <button class="btn btn-primary" id="btn-new" onclick="openModal()">+ Novo</button>
+      </div>
+    </div>
+
+    <div class="content" id="content">
+      <div class="loading">Carregando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Novo lead</div>
+    <div id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" id="modal-save" onclick="saveModal()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let currentView = 'dashboard';
+let modalType = '';
+let editingId = null;
+
+const avatarColors = [
+  ['#E6F1FB','#0C447C'],['#E1F5EE','#085041'],['#FAEEDA','#633806'],
+  ['#FBEAF0','#72243E'],['#EEEDFE','#3C3489'],['#EAF3DE','#27500A']
+];
+function getAvatar(name, idx) {
+  const initials = name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+  const [bg, color] = avatarColors[idx % avatarColors.length];
+  return `<div class="avatar" style="background:${bg};color:${color};">${initials}</div>`;
+}
+function badgeHtml(status) {
+  const map = {
+    novo:'Novo',qualificado:'Qualificado',proposta:'Proposta',
+    negociacao:'Negociação',cliente:'Cliente',perdido:'Perdido',
+    iniciando:'Iniciando',andamento:'Em andamento',concluido:'Concluído'
+  };
+  return `<span class="badge badge-${status}">${map[status]||status}</span>`;
+}
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr);
+  const h = Math.floor(diff/3600000);
+  if (h < 1) return 'agora';
+  if (h < 24) return `${h}h atrás`;
+  const d = Math.floor(h/24);
+  if (d === 1) return 'ontem';
+  return `${d} dias`;
+}
+
+// ── NAVEGAÇÃO ────────────────────────────────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    currentView = el.dataset.view;
+    document.getElementById('page-title').textContent =
+      {dashboard:'Dashboard',leads:'Leads',clientes:'Clientes',whatsapp:'WhatsApp',projetos:'Projetos'}[currentView];
+    document.getElementById('search-input').classList.toggle('hidden', currentView === 'dashboard');
+    loadCurrentView();
+  });
+});
+
+document.getElementById('search-input').addEventListener('input', debounce(loadCurrentView, 300));
+
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(()=>fn(...a),ms); }; }
+function loadCurrentView() {
+  const v = currentView;
+  if (v === 'dashboard') loadDashboard();
+  else if (v === 'leads') loadContatos('leads');
+  else if (v === 'clientes') loadContatos('clientes');
+  else if (v === 'whatsapp') loadWhatsapp();
+  else if (v === 'projetos') loadProjetos();
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  const c = document.getElementById('content');
+  c.innerHTML = '<div class="loading">Carregando...</div>';
+  try {
+    const [dash, conversas] = await Promise.all([
+      fetch(API+'/api/dashboard').then(r=>r.json()),
+      fetch(API+'/api/contatos').then(r=>r.json())
+    ]);
+    const funilMap = {novo:0,qualificado:0,proposta:0,negociacao:0,cliente:0};
+    (dash.funil||[]).forEach(f => { if (funilMap[f.status]!==undefined) funilMap[f.status]=parseInt(f.total); });
+    const total = Object.values(funilMap).reduce((a,b)=>a+b,1);
+    c.innerHTML = `
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">Leads ativos</div><div class="metric-value">${dash.leads||0}</div><div class="metric-delta">no funil</div></div>
+        <div class="metric"><div class="metric-label">Clientes</div><div class="metric-value">${dash.clientes||0}</div><div class="metric-delta">ativos</div></div>
+        <div class="metric"><div class="metric-label">Conversão</div><div class="metric-value">${dash.conversao||0}%</div><div class="metric-delta">leads → clientes</div></div>
+        <div class="metric"><div class="metric-label">Projetos</div><div class="metric-value">${dash.projetos_ativos||0}</div><div class="metric-delta">em andamento</div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="section-title">Funil de vendas</div>
+          ${[
+            ['Novo contato','novo','#B5D4F4','#0C447C'],
+            ['Qualificado','qualificado','#9FE1CB','#085041'],
+            ['Proposta','proposta','#FAC775','#633806'],
+            ['Negociação','negociacao','#CEC BF6','#3C3489'],
+            ['Cliente','cliente','#C0DD97','#3B6D11']
+          ].map(([label,key,bg,color])=>`
+            <div class="funnel-row">
+              <span class="funnel-label">${label}</span>
+              <div class="funnel-bar-wrap">
+                <div class="funnel-bar" style="width:${Math.max(8,(funilMap[key]/total)*100)}%;background:${bg};color:${color};">${funilMap[key]||0}</div>
+              </div>
+              <span class="funnel-count">${funilMap[key]||0}</span>
+            </div>`).join('')}
+        </div>
+        <div class="card">
+          <div class="section-title">Contatos recentes</div>
+          <div class="contact-list">
+            ${conversas.slice(0,5).map((c,i)=>`
+              <div class="contact-row">
+                ${getAvatar(c.nome,i)}
+                <div class="contact-info">
+                  <div class="contact-name">${c.nome}</div>
+                  <div class="contact-sub">${c.empresa||'Sem empresa'} · ${timeAgo(c.criado_em)}</div>
+                </div>
+                ${badgeHtml(c.status)}
+              </div>`).join('') || '<div class="empty">Nenhum contato ainda</div>'}
+          </div>
+        </div>
+      </div>`;
+  } catch(e) {
+    c.innerHTML = `<div class="empty">Erro ao carregar. Verifique se o servidor está rodando.</div>`;
+  }
+}
+
+// ── CONTATOS (LEADS + CLIENTES) ───────────────────────────────────────────────
+async function loadContatos(tipo) {
+  const c = document.getElementById('content');
+  c.innerHTML = '<div class="loading">Carregando...</div>';
+  const busca = document.getElementById('search-input').value;
+  const status = tipo === 'clientes' ? 'cliente' : '';
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (busca) params.set('busca', busca);
+  try {
+    let data = await fetch(API+'/api/contatos?'+params).then(r=>r.json());
+    if (tipo === 'leads') data = data.filter(d => d.status !== 'cliente');
+    c.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <span style="font-size:12px;color:var(--text3);">${data.length} ${tipo === 'leads' ? 'leads' : 'clientes'}</span>
+      </div>
+      <div class="card">
+        <div class="contact-list">
+          ${data.length ? data.map((ct,i)=>`
+            <div class="contact-row" onclick="openEditContato(${ct.id})">
+              ${getAvatar(ct.nome,i)}
+              <div class="contact-info">
+                <div class="contact-name">${ct.nome}</div>
+                <div class="contact-sub">${ct.empresa||''} ${ct.telefone ? '· '+ct.telefone : ''} · ${timeAgo(ct.criado_em)}</div>
+              </div>
+              <div class="contact-actions">
+                ${badgeHtml(ct.status)}
+              </div>
+            </div>`).join('') : '<div class="empty">Nenhum registro encontrado</div>'}
+        </div>
+      </div>`;
+  } catch(e) {
+    c.innerHTML = `<div class="empty">Erro ao carregar contatos.</div>`;
+  }
+}
+
+// ── WHATSAPP ──────────────────────────────────────────────────────────────────
+async function loadWhatsapp() {
+  const c = document.getElementById('content');
+  c.innerHTML = '<div class="loading">Carregando...</div>';
+  try {
+    const contatos = await fetch(API+'/api/contatos').then(r=>r.json());
+    const whatsContatos = contatos.filter(ct => ct.origem === 'whatsapp' || ct.telefone);
+    document.getElementById('unread-count').style.display = 'none';
+    c.innerHTML = `
+      <div style="margin-bottom:14px;">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:8px;">Conversas via API do WhatsApp</div>
+        <div style="background:var(--amber-bg);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--amber-text);">
+          Para ativar a integração real, configure as variáveis <strong>WHATSAPP_TOKEN</strong>, <strong>WHATSAPP_PHONE_ID</strong> e <strong>WHATSAPP_VERIFY_TOKEN</strong> no Railway.
+        </div>
+      </div>
+      <div class="card">
+        <div class="chat-list">
+          ${whatsContatos.length ? whatsContatos.map((ct,i)=>`
+            <div class="chat-item" onclick="openChat(${ct.id}, '${ct.nome.replace(/'/g,"\\'")}')">
+              ${getAvatar(ct.nome,i)}
+              <div class="chat-info">
+                <div class="chat-name">${ct.nome}</div>
+                <div class="chat-preview">${ct.empresa||ct.telefone||'Clique para ver conversa'}</div>
+              </div>
+              <div class="chat-meta">
+                <span class="chat-time">${timeAgo(ct.atualizado_em)}</span>
+              </div>
+            </div>`).join('') : '<div class="empty">Nenhuma conversa ainda.<br>Mensagens do WhatsApp aparecerão aqui automaticamente.</div>'}
+        </div>
+      </div>`;
+  } catch(e) {
+    c.innerHTML = `<div class="empty">Erro ao carregar conversas.</div>`;
+  }
+}
+
+async function openChat(contatoId, nome) {
+  const c = document.getElementById('content');
+  const msgs = await fetch(API+'/api/conversas/'+contatoId).then(r=>r.json());
+  c.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <button class="btn" onclick="loadWhatsapp()">← Voltar</button>
+      <span style="font-size:15px;font-weight:600;">${nome}</span>
+    </div>
+    <div class="card" style="max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;" id="chat-msgs">
+      ${msgs.length ? msgs.map(m=>`
+        <div style="display:flex;justify-content:${m.direcao==='saida'?'flex-end':'flex-start'};">
+          <div style="max-width:70%;padding:8px 12px;border-radius:${m.direcao==='saida'?'12px 12px 2px 12px':'12px 12px 12px 2px'};background:${m.direcao==='saida'?'#1D9E75':'var(--bg3)'};color:${m.direcao==='saida'?'white':'var(--text)'};font-size:13px;">
+            ${m.mensagem}
+            <div style="font-size:10px;opacity:0.6;margin-top:3px;text-align:right;">${timeAgo(m.criado_em)}</div>
+          </div>
+        </div>`).join('') : '<div class="empty">Sem mensagens ainda</div>'}
+    </div>
+    <div style="display:flex;gap:8px;">
+      <input class="form-input" id="msg-input" placeholder="Digitar mensagem..." style="flex:1;" onkeydown="if(event.key==='Enter') sendMsg(${contatoId})">
+      <button class="btn btn-primary" onclick="sendMsg(${contatoId})">Enviar</button>
+    </div>`;
+  const box = document.getElementById('chat-msgs');
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendMsg(contatoId) {
+  const input = document.getElementById('msg-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  await fetch(API+'/api/conversas', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({contato_id: contatoId, mensagem: msg, direcao:'saida', canal:'manual'})
+  });
+  const nome = document.querySelector('.main .page-title')?.textContent || '';
+  openChat(contatoId, nome);
+}
+
+// ── PROJETOS ──────────────────────────────────────────────────────────────────
+async function loadProjetos() {
+  const c = document.getElementById('content');
+  c.innerHTML = '<div class="loading">Carregando...</div>';
+  try {
+    const data = await fetch(API+'/api/projetos').then(r=>r.json());
+    const barColor = {'iniciando':'#378ADD','andamento':'#EF9F27','concluido':'#1D9E75'};
+    c.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <span style="font-size:12px;color:var(--text3);">${data.length} projetos</span>
+      </div>
+      <div class="card">
+        ${data.length ? data.map(p=>`
+          <div class="project-card">
+            <div class="project-info">
+              <div class="project-title">${p.titulo}</div>
+              <div class="project-sub">${p.contato_nome||'Sem cliente'} ${p.responsavel?'· '+p.responsavel:''} ${p.prazo?'· até '+new Date(p.prazo).toLocaleDateString('pt-BR'):''}</div>
+            </div>
+            <div class="progress-wrap">
+              <div class="progress-label">${p.progresso}%</div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${p.progresso}%;background:${barColor[p.status]||'#888'};"></div></div>
+            </div>
+            ${badgeHtml(p.status)}
+          </div>`).join('') : '<div class="empty">Nenhum projeto cadastrado</div>'}
+      </div>`;
+  } catch(e) {
+    c.innerHTML = `<div class="empty">Erro ao carregar projetos.</div>`;
+  }
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function openModal() {
+  if (currentView === 'dashboard') return;
+  editingId = null;
+  modalType = currentView;
+  document.getElementById('modal-title').textContent = {leads:'Novo lead',clientes:'Novo cliente',projetos:'Novo projeto'}[currentView]||'Novo';
+  document.getElementById('modal-body').innerHTML = currentView === 'projetos' ? formProjeto() : formContato(currentView);
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+function openEditContato(id) {
+  editingId = id;
+  modalType = currentView;
+  document.getElementById('modal-title').textContent = 'Editar contato';
+  document.getElementById('modal-body').innerHTML = formContato(currentView);
+  document.getElementById('modal').classList.remove('hidden');
+  fetch(API+'/api/contatos').then(r=>r.json()).then(data=>{
+    const ct = data.find(c=>c.id===id);
+    if (!ct) return;
+    document.getElementById('f-nome').value = ct.nome||'';
+    document.getElementById('f-empresa').value = ct.empresa||'';
+    document.getElementById('f-telefone').value = ct.telefone||'';
+    document.getElementById('f-email').value = ct.email||'';
+    document.getElementById('f-status').value = ct.status||'novo';
+    document.getElementById('f-notas').value = ct.notas||'';
+  });
+}
+
+function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+function formContato(tipo) {
+  const statusOptions = tipo === 'clientes'
+    ? `<option value="cliente">Cliente</option>`
+    : `<option value="novo">Novo</option><option value="qualificado">Qualificado</option><option value="proposta">Proposta</option><option value="negociacao">Negociação</option><option value="cliente">Cliente</option><option value="perdido">Perdido</option>`;
+  return `
+    <div class="form-group"><label class="form-label">Nome *</label><input class="form-input" id="f-nome" placeholder="Nome completo ou empresa"></div>
+    <div class="form-group"><label class="form-label">Empresa</label><input class="form-input" id="f-empresa" placeholder="Nome da empresa"></div>
+    <div class="form-group"><label class="form-label">Telefone (WhatsApp)</label><input class="form-input" id="f-telefone" placeholder="5544999999999"></div>
+    <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" id="f-email" type="email" placeholder="email@empresa.com"></div>
+    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="f-status">${statusOptions}</select></div>
+    <div class="form-group"><label class="form-label">Notas</label><textarea class="form-textarea" id="f-notas" placeholder="Observações sobre este contato..."></textarea></div>`;
+}
+
+function formProjeto() {
+  return `
+    <div class="form-group"><label class="form-label">Título *</label><input class="form-input" id="f-titulo" placeholder="Ex: Gestão de redes — Cliente X"></div>
+    <div class="form-group"><label class="form-label">Responsável</label><input class="form-input" id="f-responsavel" placeholder="Nome do colaborador"></div>
+    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="f-pstatus"><option value="iniciando">Iniciando</option><option value="andamento">Em andamento</option><option value="concluido">Concluído</option></select></div>
+    <div class="form-group"><label class="form-label">Progresso (%)</label><input class="form-input" id="f-progresso" type="number" min="0" max="100" value="0"></div>
+    <div class="form-group"><label class="form-label">Prazo</label><input class="form-input" id="f-prazo" type="date"></div>`;
+}
+
+async function saveModal() {
+  try {
+    if (modalType === 'projetos') {
+      const body = {
+        titulo: document.getElementById('f-titulo').value,
+        responsavel: document.getElementById('f-responsavel').value,
+        status: document.getElementById('f-pstatus').value,
+        progresso: parseInt(document.getElementById('f-progresso').value)||0,
+        prazo: document.getElementById('f-prazo').value||null
+      };
+      await fetch(API+'/api/projetos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    } else {
+      const body = {
+        nome: document.getElementById('f-nome').value,
+        empresa: document.getElementById('f-empresa').value,
+        telefone: document.getElementById('f-telefone').value,
+        email: document.getElementById('f-email').value,
+        status: document.getElementById('f-status').value,
+        notas: document.getElementById('f-notas').value,
+        origem: 'manual'
+      };
+      if (editingId) {
+        await fetch(API+'/api/contatos/'+editingId, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      } else {
+        await fetch(API+'/api/contatos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      }
+    }
+    closeModal();
+    loadCurrentView();
+  } catch(e) {
+    alert('Erro ao salvar. Tente novamente.');
+  }
+}
+
+// Fechar modal clicando fora
+document.getElementById('modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+
+// Inicia
+loadDashboard();
+</script>
+</body>
+</html>
