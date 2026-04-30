@@ -211,7 +211,7 @@ app.post('/webhook', async (req, res) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 500,
         system: 'Voce e o assistente virtual de uma agencia de marketing. Seja simpatico, profissional e objetivo. Mencione servicos: gestao de redes sociais, trafego pago, SEO e criacao de conteudo. Finalize sempre convidando o cliente a conversar com um especialista.',
         messages: [{ role: 'user', content: texto }]
