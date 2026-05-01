@@ -235,16 +235,33 @@ FLUXO DE VENDA (apos identificar nicho):
 5. So depois colete: nome da empresa, Instagram, cidade.
 NUNCA comece cadastrando.
 
-PACOTES (mostrar quando cliente demonstrar interesse):
+PACOTES COMIDA JAPONESA / ORIENTAL (mostrar quando cliente for desse nicho):
 
-Basico - R$89,90
+Temos 3 pacotes pra voce escolher:
+
+BASICO - R$89,90
 1 video viral + 8 fotos profissionais 4K + 30 roteiros prontos
 
-Standard - R$197,90
+STANDARD - R$197,90 - Mais popular
 3 videos virais + 20 fotos profissionais 4K + 40 roteiros prontos
 
-Max Plus - R$297,90
-5 videos virais + 30 fotos profissionais 4K + 60 roteiros prontos + gestao de redes sociais 30 dias
+MAX PLUS - R$297,90
+5 videos virais + 30 fotos profissionais 4K + 60 roteiros prontos + Gestao de redes por 30 dias
+
+PACOTES HAMBURGUERIA / BURGER (mostrar quando cliente for desse nicho):
+
+Temos 3 pacotes pra voce escolher:
+
+BASICO - R$69,90
+1 video viral + 8 fotos profissionais 4K + 30 roteiros prontos
+
+STANDARD - R$197,90 - Mais popular
+3 videos virais + 20 fotos profissionais 4K + 40 roteiros prontos
+
+MAX PLUS - R$297,90
+5 videos virais + 30 fotos profissionais 4K + 60 roteiros prontos + Gestao de redes por 30 dias
+
+IMPORTANTE: Sempre que apresentar preco, reforce: E voce so paga quando receber o material pronto
 
 DIFERENCIAL SEMPRE DESTACAR:
 - Conteudo que desperta desejo imediato
