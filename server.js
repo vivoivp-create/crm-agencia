@@ -391,6 +391,112 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
+
+// =============================================
+// SISTEMA DE REAQUECIMENTO POR INATIVIDADE
+// =============================================
+
+const MENSAGENS_REAQUECIMENTO = {
+  1: `Ei, tudo bem? 😊
+
+Vi que voce ficou com alguma duvida por aqui...
+
+Estou aqui pra te ajudar a escolher o melhor caminho pro seu negocio 🔥
+
+O que voce achou do que conversamos?`,
+
+  12: `Oi! Fabiano aqui da Vigore 👋
+
+Queria saber se voce teve a chance de pensar na proposta 🤔
+
+Lembra que voce so paga depois de receber o material pronto... zero risco! 🙏
+
+Ainda da tempo de comecar essa semana. Topa?`,
+
+  24: `Ultima chance hoje! ⏰
+
+Nosso time ainda tem uma vaga disponivel para comecar essa semana 🚀
+
+Se voce fechar agora, a gente ja coloca na fila de producao.
+
+Quer garantir a sua vaga? 👇`
+};
+
+async function enviarMensagemWhatsApp(telefone, mensagem) {
+  try {
+    const waRes = await fetch(`https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: telefone,
+        type: 'text',
+        text: { body: mensagem }
+      })
+    });
+    const data = await waRes.json();
+    console.log('Reaquecimento enviado para', telefone, ':', JSON.stringify(data).substring(0, 100));
+    return data;
+  } catch (err) {
+    console.error('Erro ao enviar reaquecimento:', err);
+  }
+}
+
+async function verificarInativos() {
+  try {
+    const agora = new Date();
+    const contatos = await pool.query(`
+      SELECT c.id, c.telefone, c.status,
+        MAX(cv.criado_em) as ultima_mensagem,
+        COUNT(cv.id) FILTER (WHERE cv.direcao = 'saida' AND cv.mensagem LIKE '%reaquecimento%') as reaquecimentos_enviados
+      FROM contatos c
+      JOIN conversas cv ON cv.contato_id = c.id
+      WHERE c.origem = 'whatsapp'
+        AND c.status NOT IN ('cliente', 'perdido')
+        AND cv.direcao = 'entrada'
+      GROUP BY c.id, c.telefone, c.status
+      HAVING MAX(cv.criado_em) < NOW() - INTERVAL '55 minutes'
+        AND MAX(cv.criado_em) > NOW() - INTERVAL '25 hours'
+    `);
+
+    for (const contato of contatos.rows) {
+      const minutosSemResposta = Math.floor((agora - new Date(contato.ultima_mensagem)) / 60000);
+      const reaquecimentos = parseInt(contato.reaquecimentos_enviados) || 0;
+
+      let mensagem = null;
+      let etapa = null;
+
+      if (minutosSemResposta >= 60 && minutosSemResposta < 720 && reaquecimentos === 0) {
+        mensagem = MENSAGENS_REAQUECIMENTO[1];
+        etapa = '1h';
+      } else if (minutosSemResposta >= 720 && minutosSemResposta < 1440 && reaquecimentos === 1) {
+        mensagem = MENSAGENS_REAQUECIMENTO[12];
+        etapa = '12h';
+      } else if (minutosSemResposta >= 1200 && minutosSemResposta < 1380 && reaquecimentos === 2) {
+        mensagem = MENSAGENS_REAQUECIMENTO[24];
+        etapa = '24h';
+      }
+
+      if (mensagem && contato.telefone) {
+        console.log(`Reaquecimento ${etapa} para ${contato.telefone} (${minutosSemResposta} min inativo)`);
+        await enviarMensagemWhatsApp(contato.telefone, mensagem);
+        await pool.query(
+          `INSERT INTO conversas (contato_id, mensagem, direcao, canal) VALUES ($1, $2, 'saida', 'whatsapp')`,
+          [contato.id, `[reaquecimento ${etapa}] ${mensagem}`]
+        );
+      }
+    }
+  } catch (err) {
+    console.error('Erro no verificarInativos:', err);
+  }
+}
+
+setInterval(verificarInativos, 5 * 60 * 1000);
+console.log('Sistema de reaquecimento ativo - verificando a cada 5 minutos');
+
 const PORT = process.env.PORT || 3000;
 initDB().then(() => {
   app.listen(PORT, () => console.log(`CRM rodando na porta ${PORT}`));
