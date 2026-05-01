@@ -501,3 +501,4 @@ const PORT = process.env.PORT || 3000;
 initDB().then(() => {
   app.listen(PORT, () => console.log(`CRM rodando na porta ${PORT}`));
 });
+
