@@ -163,6 +163,18 @@ app.get('/api/dashboard', async (req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
+
+// Serve o CRM diretamente (sem cache)
+app.get('/', (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  const fs = require('fs');
+  const path = require('path');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'), {
+    headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+  });
+});
+
 app.get('/webhook', (req, res) => {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'agencia123';
   console.log('GET webhook - token:', req.query['hub.verify_token']);
@@ -501,4 +513,3 @@ const PORT = process.env.PORT || 3000;
 initDB().then(() => {
   app.listen(PORT, () => console.log(`CRM rodando na porta ${PORT}`));
 });
-
