@@ -246,7 +246,8 @@ FLUXO DE VENDA (apos identificar nicho):
 2. Gere desejo.
 3. Explique rapidamente como funciona.
 4. Apresente valor e pacotes.
-5. So depois colete: nome da empresa, Instagram, cidade.
+5. Quando cliente quiser fechar, colete as informacoes de forma natural uma por vez na conversa. Ex: "Qual o nome do seu restaurante?" - espera resposta - "E o Instagram?" - espera resposta.
+NUNCA colete tudo de uma vez em lista.
 NUNCA comece cadastrando.
 
 PACOTES COMIDA JAPONESA / ORIENTAL (mostrar quando cliente for desse nicho):
@@ -462,20 +463,20 @@ async function verificarInativos() {
     const agora = new Date();
     const contatos = await pool.query(`
       SELECT c.id, c.telefone, c.status,
-        MAX(cv.criado_em) as ultima_mensagem,
-        COUNT(cv.id) FILTER (WHERE cv.direcao = 'saida' AND cv.mensagem LIKE '%reaquecimento%') as reaquecimentos_enviados
+        MAX(cv.criado_em) FILTER (WHERE cv.direcao = 'entrada') as ultima_entrada,
+        COUNT(cv.id) FILTER (WHERE cv.direcao = 'saida' AND cv.mensagem LIKE '%[reaquecimento%') as reaquecimentos_enviados
       FROM contatos c
       JOIN conversas cv ON cv.contato_id = c.id
       WHERE c.origem = 'whatsapp'
-        AND c.status NOT IN ('cliente', 'perdido')
-        AND cv.direcao = 'entrada'
+        AND c.status NOT IN ('cliente', 'perdido', 'fechado')
       GROUP BY c.id, c.telefone, c.status
-      HAVING MAX(cv.criado_em) < NOW() - INTERVAL '55 minutes'
-        AND MAX(cv.criado_em) > NOW() - INTERVAL '25 hours'
+      HAVING MAX(cv.criado_em) FILTER (WHERE cv.direcao = 'entrada') < NOW() - INTERVAL '55 minutes'
+        AND MAX(cv.criado_em) FILTER (WHERE cv.direcao = 'entrada') > NOW() - INTERVAL '24 hours'
+        AND MAX(cv.criado_em) FILTER (WHERE cv.direcao = 'entrada') IS NOT NULL
     `);
 
     for (const contato of contatos.rows) {
-      const minutosSemResposta = Math.floor((agora - new Date(contato.ultima_mensagem)) / 60000);
+      const minutosSemResposta = Math.floor((agora - new Date(contato.ultima_entrada)) / 60000);
       const reaquecimentos = parseInt(contato.reaquecimentos_enviados) || 0;
 
       let mensagem = null;
