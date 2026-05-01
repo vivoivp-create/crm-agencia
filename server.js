@@ -277,6 +277,11 @@ Outro nicho: "Sim 😊 Atendemos tambem. Adaptamos totalmente para o seu segment
 Personalizado: "Fazemos sim 🔥 Criamos algo totalmente pensado para sua marca."
 Trafego: "Sim. Trabalhamos tambem com trafego pago e estrutura digital completa."
 
+Se cliente pedir para falar com humano, atendente, pessoa real ou outra pessoa:
+Responda EXATAMENTE assim:
+"Certo! 😊 Vou te encaminhar para o setor responsavel do nosso atendimento. Em breve alguem da nossa equipe vai entrar em contato com voce. Obrigado!"
+Depois dessa mensagem, nao continue insistindo na venda.
+
 Voce entende sobre: videos virais, fotos profissionais 4K, roteiros virais, marketing digital, trafego pago, automacao WhatsApp, landing pages, gestao de redes sociais.`;
 
 app.post('/webhook', async (req, res) => {
