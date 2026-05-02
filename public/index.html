@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vigore Agência Digital — CRM</title>
+<title>Vigore Agencia Digital - CRM</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:flex;height:100vh;overflow:hidden}
@@ -28,8 +28,11 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
 .btn-ghost:hover{background:#1a1a1a;color:#e0e0e0}
 .btn-danger{background:#c0392b;color:#fff}
 .btn-danger:hover{background:#a93226}
+.btn-sm{padding:5px 10px;font-size:12px}
 .content{flex:1;overflow-y:auto;padding:24px}
 .content.no-pad{padding:0}
+.section{display:none}
+.section.active{display:block}
 .cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:16px;margin-bottom:24px}
 .card{background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:18px}
 .card-label{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
@@ -42,89 +45,105 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
 .funil-item{background:#0d0d0d;border:1px solid #1e1e1e;border-radius:8px;padding:14px;text-align:center}
 .funil-item .count{font-size:26px;font-weight:700;color:#2ecc71}
 .funil-item .label{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.gastos-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-group label{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.5px}
 .form-group input,.form-group select,.form-group textarea{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:6px;padding:8px 12px;color:#e0e0e0;font-size:13px;outline:none;transition:.2s}
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#2ecc71}
+.form-group input:focus,.form-group select,.form-group textarea:focus{border-color:#2ecc71}
 .form-group textarea{resize:vertical;min-height:80px}
-.gastos-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .leads-toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 .search-input{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:8px 14px;color:#e0e0e0;font-size:13px;outline:none;flex:1;min-width:180px}
 .search-input:focus{border-color:#2ecc71}
 .filter-select{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:8px 12px;color:#e0e0e0;font-size:13px;outline:none;cursor:pointer}
 .leads-list{display:flex;flex-direction:column;gap:8px}
-.lead-card{background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:.2s}
-.lead-card:hover{border-color:#2ecc71;background:#131313}
-.lead-avatar{width:40px;height:40px;border-radius:50%;background:#1a2e1f;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#2ecc71;flex-shrink:0}
+.lead-card{background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:.2s}
+.lead-card:hover{border-color:#2ecc71;background:#1a2e1f}
+.lead-avatar{width:42px;height:42px;border-radius:50%;background:#1a2e1f;border:2px solid #2ecc71;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#2ecc71;flex-shrink:0}
 .lead-info{flex:1;min-width:0}
-.lead-name{font-size:14px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lead-phone{font-size:12px;color:#555;margin-top:2px}
+.lead-name{font-size:14px;font-weight:600;color:#fff}
+.lead-sub{font-size:12px;color:#555;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lead-meta{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.badge-frio{background:#1a2535;color:#3498db}
-.badge-quente{background:#2e1a0e;color:#e67e22}
-.badge-qualificado{background:#1a2e1f;color:#2ecc71}
-.badge-fechado{background:#1a3320;color:#2ecc71;border:1px solid #2ecc71}
-.badge-perdido{background:#2e1a1a;color:#e74c3c}
-.badge-novo{background:#1e1e1e;color:#888}
-.badge-em_contato{background:#1a2535;color:#3498db}
-.lead-value{font-size:13px;font-weight:600;color:#2ecc71}
-.pago-check{width:20px;height:20px;border-radius:5px;border:2px solid #333;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.pago-check.ok{background:#2ecc71;border-color:#2ecc71}
-.wa-btn{width:32px;height:32px;border-radius:8px;background:#1a3320;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;text-decoration:none;flex-shrink:0}
-.wa-btn:hover{background:#2ecc71}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;align-items:center;justify-content:center}
+.status-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.status-novo{background:#1a1a2e;color:#7289da}
+.status-em_contato{background:#1a2e1f;color:#2ecc71}
+.status-qualificado{background:#2e2a00;color:#f39c12}
+.status-fechado{background:#003b1a;color:#00e676}
+.status-perdido{background:#2e0a0a;color:#e74c3c}
+.status-frio{background:#1a1a2e;color:#7289da}
+.status-quente{background:#2e1800;color:#ff6b35}
+.wa-btn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:#25D366;color:#fff;text-decoration:none;transition:.2s;flex-shrink:0}
+.wa-btn:hover{background:#128C7E;transform:scale(1.1)}
+.lead-valor{font-size:12px;color:#2ecc71;font-weight:600;white-space:nowrap}
+.lead-pago{font-size:10px;padding:2px 7px;border-radius:10px;background:#003b1a;color:#00e676}
+.lead-nao-pago{font-size:10px;padding:2px 7px;border-radius:10px;background:#2e1800;color:#f39c12}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:1000}
 .modal-overlay.open{display:flex}
-.modal{background:#111;border:1px solid #2a2a2a;border-radius:12px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;padding:28px}
-.modal h2{font-size:16px;font-weight:700;color:#fff;margin-bottom:20px}
-.modal-form{display:flex;flex-direction:column;gap:14px}
-.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
-.checkbox-row{display:flex;align-items:center;gap:10px;padding:6px 0}
-.checkbox-row input[type=checkbox]{width:18px;height:18px;accent-color:#2ecc71;cursor:pointer}
-.checkbox-row label{font-size:13px;color:#aaa;cursor:pointer}
-.chat-layout{display:flex;height:100%;overflow:hidden}
-.chat-list-panel{width:280px;border-right:1px solid #1e1e1e;overflow-y:auto;flex-shrink:0}
-.chat-item{padding:12px 14px;border-bottom:1px solid #1a1a1a;cursor:pointer;display:flex;align-items:center;gap:10px;transition:.2s}
-.chat-item:hover{background:#151515}
-.chat-item.active{background:#1a2e1f}
-.chat-avatar{width:36px;height:36px;border-radius:50%;background:#1a2e1f;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#2ecc71;flex-shrink:0}
-.chat-item-info{flex:1;min-width:0}
-.chat-item-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chat-item-prev{font-size:11px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.modal{background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:28px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:16px;font-weight:600;color:#2ecc71;margin-bottom:20px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.modal-grid .full{grid-column:1/-1}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.chat-container{display:flex;height:100%;overflow:hidden}
+.chat-list{width:280px;background:#111;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;flex-shrink:0}
+.chat-list-header{padding:16px;border-bottom:1px solid #1e1e1e;font-size:14px;font-weight:600;color:#2ecc71}
+.chat-list-items{overflow-y:auto;flex:1}
+.chat-list-item{padding:14px 16px;border-bottom:1px solid #1a1a1a;cursor:pointer;transition:.2s}
+.chat-list-item:hover{background:#1a1a1a}
+.chat-list-item.active{background:#1a2e1f}
+.chat-list-item .cli-name{font-size:13px;font-weight:600;color:#fff}
+.chat-list-item .cli-preview{font-size:12px;color:#555;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.chat-header{background:#111;border-bottom:1px solid #1e1e1e;padding:12px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0}
-.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
-.msg{max-width:70%;padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.5;word-break:break-word}
-.msg-in{background:#1e1e1e;color:#ddd;align-self:flex-start;border-radius:4px 12px 12px 12px}
-.msg-out{background:#1a3320;color:#e0e0e0;align-self:flex-end;border-radius:12px 4px 12px 12px}
-.msg-time{font-size:10px;color:#555;margin-top:3px}
-.chat-no-sel{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#333;font-size:13px}
-.page{display:none}
-.page.active{display:flex;flex-direction:column;flex:1;overflow:hidden}
-.page-scroll{display:none}
-.page-scroll.active{display:block}
+.chat-header{background:#111;border-bottom:1px solid #1e1e1e;padding:14px 20px;display:flex;align-items:center;gap:12px}
+.chat-avatar{width:38px;height:38px;border-radius:50%;background:#1a2e1f;border:2px solid #2ecc71;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#2ecc71;flex-shrink:0}
+.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:75%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5;word-wrap:break-word}
+.msg.entrada{background:#1a1a1a;border:1px solid #2a2a2a;color:#e0e0e0;align-self:flex-start;border-radius:2px 12px 12px 12px}
+.msg.saida{background:#1a2e1f;border:1px solid #2ecc71;color:#e0e0e0;align-self:flex-end;border-radius:12px 2px 12px 12px}
+.msg-time{font-size:10px;color:#555;margin-top:4px;text-align:right}
+.chat-input-area{background:#111;border-top:1px solid #1e1e1e;padding:14px 20px;display:flex;gap:10px}
+.chat-input{flex:1;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;padding:10px 14px;color:#e0e0e0;font-size:13px;outline:none;resize:none;max-height:100px;font-family:inherit}
+.chat-input:focus{border-color:#2ecc71}
+.chat-send-btn{background:#2ecc71;color:#000;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-weight:600;transition:.2s;align-self:flex-end}
+.chat-send-btn:hover{background:#27ae60}
+.no-chat{flex:1;display:flex;align-items:center;justify-content:center;color:#444;font-size:14px}
+.fin-container{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.fin-card{background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:20px}
+.fin-card h3{font-size:12px;color:#2ecc71;text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px}
+.fin-total{font-size:28px;font-weight:700;color:#2ecc71;margin-top:8px}
+.fin-total.red{color:#e74c3c}
+.fin-total.yellow{color:#f39c12}
+.save-btn{background:#2ecc71;color:#000;border:none;border-radius:6px;padding:8px 18px;cursor:pointer;font-size:13px;font-weight:600;transition:.2s;margin-top:12px}
+.save-btn:hover{background:#27ae60}
+.empty-state{text-align:center;padding:60px 20px;color:#444}
+.empty-state svg{width:48px;height:48px;margin-bottom:12px;opacity:.3}
+.empty-state p{font-size:14px}
+.pago-check{display:flex;align-items:center;gap:6px;font-size:12px;color:#555}
+.pago-check input[type=checkbox]{accent-color:#2ecc71;width:15px;height:15px}
+@media(max-width:700px){.sidebar{display:none}.fin-container{grid-template-columns:1fr}.modal-grid{grid-template-columns:1fr}.chat-list{width:100%}}
 </style>
 </head>
 <body>
-
 <div class="sidebar">
   <div class="sidebar-logo">
     <h2>VIGORE</h2>
-    <p>Agência Digital</p>
+    <p>Agencia Digital</p>
   </div>
   <nav>
-    <div class="nav-item active" onclick="nav('dashboard')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+    <div class="nav-item active" onclick="showSection('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
     </div>
-    <div class="nav-item" onclick="nav('leads')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Leads
+    <div class="nav-item" onclick="showSection('leads')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Leads
     </div>
-    <div class="nav-item" onclick="nav('chat')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chat
+    <div class="nav-item" onclick="showSection('chat')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Chat
     </div>
-    <div class="nav-item" onclick="nav('financeiro')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Financeiro
+    <div class="nav-item" onclick="showSection('financeiro')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Financeiro
     </div>
   </nav>
 </div>
@@ -132,273 +151,470 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
 <div class="main">
   <div class="topbar">
     <h1 id="page-title">Dashboard</h1>
-    <div class="topbar-actions" id="topbar-actions"></div>
-  </div>
-
-  <!-- DASHBOARD -->
-  <div id="page-dashboard" class="page active">
-    <div class="content">
-      <div class="cards-grid">
-        <div class="card"><div class="card-label">Leads Totais</div><div class="card-value" id="d-leads">—</div></div>
-        <div class="card"><div class="card-label">Fechados</div><div class="card-value green" id="d-fechados">—</div></div>
-        <div class="card"><div class="card-label">Faturamento Real</div><div class="card-value green" id="d-fat">—</div></div>
-        <div class="card"><div class="card-label">Previsão Entrada</div><div class="card-value yellow" id="d-prev">—</div></div>
-        <div class="card"><div class="card-label">Total Gastos</div><div class="card-value red" id="d-gastos">—</div></div>
-        <div class="card"><div class="card-label">Resultado Final</div><div class="card-value" id="d-result">—</div></div>
-      </div>
-      <div class="dash-section">
-        <h3>Funil de Vendas</h3>
-        <div class="funil-grid" id="funil-grid"></div>
-      </div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" id="btn-novo" onclick="abrirModalNovo()" style="display:none">+ Novo Lead</button>
+      <button class="btn btn-ghost btn-sm" onclick="atualizarTudo()">Atualizar</button>
     </div>
   </div>
 
-  <!-- LEADS -->
-  <div id="page-leads" class="page">
-    <div class="content">
-      <div class="leads-toolbar">
-        <input class="search-input" type="text" placeholder="Buscar nome, telefone..." id="lead-search" oninput="filtrarLeads()">
-        <select class="filter-select" id="lead-filter" onchange="filtrarLeads()">
-          <option value="">Todos</option>
-          <option value="novo">Novo</option>
-          <option value="frio">Frio</option>
-          <option value="em_contato">Em Contato</option>
-          <option value="quente">Quente</option>
-          <option value="qualificado">Qualificado</option>
-          <option value="fechado">Fechado</option>
-          <option value="perdido">Perdido</option>
-        </select>
+  <div class="content" id="section-dashboard">
+    <div class="cards-grid" id="dash-cards">
+      <div class="card"><div class="card-label">Total Leads</div><div class="card-value" id="d-total">-</div></div>
+      <div class="card"><div class="card-label">Faturamento Real</div><div class="card-value green" id="d-fat">R$ 0</div><div class="card-sub">pagos confirmados</div></div>
+      <div class="card"><div class="card-label">Previsao Entrada</div><div class="card-value yellow" id="d-prev">R$ 0</div><div class="card-sub">fechados nao pagos</div></div>
+      <div class="card"><div class="card-label">Resultado</div><div class="card-value" id="d-result">R$ 0</div><div class="card-sub">fat - gastos</div></div>
+    </div>
+    <div class="dash-section">
+      <h3>Funil de Vendas</h3>
+      <div class="funil-grid">
+        <div class="funil-item"><div class="count" id="f-novo">0</div><div class="label">Novos</div></div>
+        <div class="funil-item"><div class="count" id="f-em_contato">0</div><div class="label">Em Contato</div></div>
+        <div class="funil-item"><div class="count" id="f-qualificado">0</div><div class="label">Qualificados</div></div>
+        <div class="funil-item"><div class="count" id="f-fechado">0</div><div class="label">Fechados</div></div>
+        <div class="funil-item"><div class="count" id="f-perdido">0</div><div class="label">Perdidos</div></div>
       </div>
-      <div class="leads-list" id="leads-list"></div>
+    </div>
+    <div class="dash-section">
+      <h3>Gastos Mensais</h3>
+      <div class="gastos-form">
+        <div class="form-group"><label>Meta ADS (R$)</label><input type="number" id="gasto-meta" placeholder="0" oninput="salvarGastos()"></div>
+        <div class="form-group"><label>Mao de Obra (R$)</label><input type="number" id="gasto-mdo" placeholder="0" oninput="salvarGastos()"></div>
+      </div>
+      <div style="margin-top:14px;font-size:12px;color:#555">Gastos Totais: <span id="d-gastos" style="color:#e74c3c;font-weight:600">R$ 0</span></div>
     </div>
   </div>
 
-  <!-- CHAT -->
-  <div id="page-chat" class="page">
-    <div class="chat-layout">
-      <div class="chat-list-panel" id="chat-list-panel"></div>
+  <div class="content" id="section-leads" style="display:none">
+    <div class="leads-toolbar">
+      <input class="search-input" id="search-leads" placeholder="Buscar por nome, empresa, telefone..." oninput="filtrarLeads()">
+      <select class="filter-select" id="filter-status" onchange="filtrarLeads()">
+        <option value="">Todos os status</option>
+        <option value="novo">Novo</option>
+        <option value="em_contato">Em Contato</option>
+        <option value="qualificado">Qualificado</option>
+        <option value="fechado">Fechado</option>
+        <option value="perdido">Perdido</option>
+        <option value="frio">Frio</option>
+        <option value="quente">Quente</option>
+      </select>
+    </div>
+    <div class="leads-list" id="leads-list"></div>
+  </div>
+
+  <div class="content no-pad" id="section-chat" style="display:none">
+    <div class="chat-container">
+      <div class="chat-list">
+        <div class="chat-list-header">Conversas</div>
+        <div class="chat-list-items" id="chat-list-items"></div>
+      </div>
       <div class="chat-main" id="chat-main">
-        <div class="chat-no-sel">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:44px;height:44px;opacity:.25"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          Selecione um lead para ver a conversa
-        </div>
+        <div class="no-chat">Selecione uma conversa</div>
       </div>
     </div>
   </div>
 
-  <!-- FINANCEIRO -->
-  <div id="page-financeiro" class="page">
-    <div class="content">
-      <div class="dash-section">
-        <h3>Gastos Fixos Mensais</h3>
-        <div class="gastos-form">
-          <div class="form-group">
-            <label>Meta ADS (R$)</label>
-            <input type="number" id="gasto-meta" placeholder="0.00" step="0.01" oninput="salvarGastos()">
-          </div>
-          <div class="form-group">
-            <label>Mão de Obra (R$)</label>
-            <input type="number" id="gasto-mdo" placeholder="0.00" step="0.01" oninput="salvarGastos()">
-          </div>
-        </div>
+  <div class="content" id="section-financeiro" style="display:none">
+    <div class="fin-container">
+      <div class="fin-card">
+        <h3>Receitas</h3>
+        <div class="form-group"><label>Faturamento Real (pagos)</label><div class="fin-total" id="fin-fat">R$ 0,00</div></div>
+        <div style="margin-top:16px"><div class="form-group"><label>Previsao de Entrada</label><div class="fin-total yellow" id="fin-prev">R$ 0,00</div></div></div>
       </div>
-      <div class="dash-section">
-        <h3>Resumo Financeiro</h3>
-        <div class="cards-grid">
-          <div class="card"><div class="card-label">Faturamento Real</div><div class="card-value green" id="f-fat">R$ 0,00</div><div class="card-sub">Vendas pagas</div></div>
-          <div class="card"><div class="card-label">Previsão de Entrada</div><div class="card-value yellow" id="f-prev">R$ 0,00</div><div class="card-sub">Fechados não pagos</div></div>
-          <div class="card"><div class="card-label">Meta ADS</div><div class="card-value red" id="f-meta">R$ 0,00</div></div>
-          <div class="card"><div class="card-label">Mão de Obra</div><div class="card-value red" id="f-mdo">R$ 0,00</div></div>
-          <div class="card"><div class="card-label">Total Gastos</div><div class="card-value red" id="f-gastos">R$ 0,00</div></div>
-          <div class="card"><div class="card-label">Resultado Final</div><div class="card-value" id="f-result">R$ 0,00</div></div>
-        </div>
+      <div class="fin-card">
+        <h3>Gastos Fixos Mensais</h3>
+        <div class="form-group" style="margin-bottom:12px"><label>Meta ADS (R$)</label><input type="number" id="fin-meta" placeholder="0,00" oninput="salvarGastosFinanceiro()"></div>
+        <div class="form-group"><label>Mao de Obra (R$)</label><input type="number" id="fin-mdo" placeholder="0,00" oninput="salvarGastosFinanceiro()"></div>
+        <div style="margin-top:16px;font-size:12px;color:#555">Total Gastos: <span id="fin-gastos-total" style="color:#e74c3c;font-weight:600">R$ 0,00</span></div>
+      </div>
+      <div class="fin-card" style="grid-column:1/-1">
+        <h3>Resultado Final</h3>
+        <div class="fin-total" id="fin-resultado">R$ 0,00</div>
+        <div style="font-size:12px;color:#555;margin-top:8px">Faturamento Real menos Gastos Totais</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- MODAL LEAD -->
 <div class="modal-overlay" id="modal-lead">
   <div class="modal">
     <h2 id="modal-title">Novo Lead</h2>
-    <div class="modal-form">
-      <div class="modal-row">
-        <div class="form-group"><label>Nome</label><input id="f-nome" type="text" placeholder="Nome completo"></div>
-        <div class="form-group"><label>Telefone (com DDI)</label><input id="f-tel" type="text" placeholder="5543999999999"></div>
+    <div class="modal-grid">
+      <div class="form-group"><label>Nome *</label><input type="text" id="m-nome" placeholder="Nome completo"></div>
+      <div class="form-group"><label>Empresa</label><input type="text" id="m-empresa" placeholder="Nome do negocio"></div>
+      <div class="form-group"><label>Telefone (com DDD)</label><input type="text" id="m-telefone" placeholder="55 43 99999-9999"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="m-email" placeholder="email@exemplo.com"></div>
+      <div class="form-group"><label>Status</label>
+        <select id="m-status">
+          <option value="novo">Novo</option>
+          <option value="em_contato">Em Contato</option>
+          <option value="qualificado">Qualificado</option>
+          <option value="fechado">Fechado</option>
+          <option value="perdido">Perdido</option>
+          <option value="frio">Frio</option>
+          <option value="quente">Quente</option>
+        </select>
       </div>
-      <div class="modal-row">
-        <div class="form-group"><label>Empresa / Nicho</label><input id="f-empresa" type="text" placeholder="Ex: Hamburgueria..."></div>
-        <div class="form-group"><label>Email</label><input id="f-email" type="text" placeholder="email@exemplo.com"></div>
+      <div class="form-group"><label>Origem</label>
+        <select id="m-origem">
+          <option value="manual">Manual</option>
+          <option value="whatsapp">WhatsApp</option>
+          <option value="campanha">Campanha</option>
+          <option value="indicacao">Indicacao</option>
+        </select>
       </div>
-      <div class="modal-row">
-        <div class="form-group">
-          <label>Status</label>
-          <select id="f-status">
-            <option value="novo">Novo</option>
-            <option value="frio">Frio</option>
-            <option value="em_contato">Em Contato</option>
-            <option value="quente">Quente</option>
-            <option value="qualificado">Qualificado</option>
-            <option value="fechado">Fechado</option>
-            <option value="perdido">Perdido</option>
-          </select>
-        </div>
-        <div class="form-group"><label>Valor do Contrato (R$)</label><input id="f-valor" type="number" placeholder="0.00" step="0.01"></div>
+      <div class="form-group"><label>Valor do Contrato (R$)</label><input type="number" id="m-valor" placeholder="0,00" step="0.01"></div>
+      <div class="form-group" style="justify-content:center">
+        <label>Pago</label>
+        <div class="pago-check"><input type="checkbox" id="m-pago"><span>Marcar como pago</span></div>
       </div>
-      <div class="checkbox-row">
-        <input type="checkbox" id="f-pago">
-        <label for="f-pago">Pagamento confirmado — entra no Faturamento Real</label>
-      </div>
-      <div class="form-group"><label>Notas</label><textarea id="f-notas" placeholder="Observações sobre o lead..."></textarea></div>
-      <div class="modal-actions">
-        <button class="btn btn-danger" id="btn-deletar" style="display:none;margin-right:auto" onclick="deletarLead()">Excluir</button>
-        <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="salvarLead()">Salvar</button>
-      </div>
+      <div class="form-group full"><label>Notas</label><textarea id="m-notas" placeholder="Observacoes sobre o lead..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarLead()">Salvar</button>
     </div>
   </div>
 </div>
 
 <script>
-let leads = [];
-let editandoId = null;
-let chatAtivoId = null;
+let todosLeads = [];
+let leadAtualId = null;
+let chatLeadAtivo = null;
 
-const fmt = v => 'R$ ' + (parseFloat(v)||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-const ini = n => (n||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-const timeAgo = d => {
-  const s = Math.floor((Date.now()-new Date(d))/1000);
-  if(s<60) return 'agora'; if(s<3600) return Math.floor(s/60)+'min';
-  if(s<86400) return Math.floor(s/3600)+'h'; return Math.floor(s/86400)+'d';
-};
-const fmtTime = d => new Date(d).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+// ============ INICIALIZACAO ============
+document.addEventListener('DOMContentLoaded', function() {
+  carregarGastos();
+  carregarDashboard();
+  carregarLeads();
+});
 
-function getGastos(){
-  return { meta: parseFloat(localStorage.getItem('gasto_meta'))||0, mdo: parseFloat(localStorage.getItem('gasto_mdo'))||0 };
-}
-function salvarGastos(){
-  localStorage.setItem('gasto_meta', document.getElementById('gasto-meta').value||0);
-  localStorage.setItem('gasto_mdo', document.getElementById('gasto-mdo').value||0);
-  renderFinanceiro(); renderDash();
-}
-function carregarGastos(){
-  const g = getGastos();
-  document.getElementById('gasto-meta').value = g.meta||'';
-  document.getElementById('gasto-mdo').value = g.mdo||'';
+function atualizarTudo() {
+  carregarDashboard();
+  carregarLeads();
+  if (chatLeadAtivo) carregarMensagens(chatLeadAtivo);
 }
 
-async function loadLeads(){
+function showSection(sec) {
+  ['dashboard','leads','chat','financeiro'].forEach(function(s) {
+    document.getElementById('section-' + s).style.display = 'none';
+    document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  });
+  document.getElementById('section-' + sec).style.display = sec === 'chat' ? 'flex' : 'block';
+  document.querySelectorAll('.nav-item').forEach(function(n) {
+    if (n.textContent.trim().toLowerCase().includes(sec.substring(0,4))) n.classList.add('active');
+  });
+
+  var titles = { dashboard:'Dashboard', leads:'Leads', chat:'Chat WhatsApp', financeiro:'Financeiro' };
+  document.getElementById('page-title').textContent = titles[sec] || sec;
+  document.getElementById('btn-novo').style.display = sec === 'leads' ? 'block' : 'none';
+
+  if (sec === 'leads') carregarLeads();
+  if (sec === 'dashboard') carregarDashboard();
+  if (sec === 'chat') carregarListaChat();
+  if (sec === 'financeiro') carregarFinanceiro();
+}
+
+// ============ GASTOS ============
+function carregarGastos() {
+  var meta = parseFloat(localStorage.getItem('gasto_meta') || 0);
+  var mdo = parseFloat(localStorage.getItem('gasto_mdo') || 0);
+  var metaEl = document.getElementById('gasto-meta');
+  var mdoEl = document.getElementById('gasto-mdo');
+  if (metaEl) metaEl.value = meta || '';
+  if (mdoEl) mdoEl.value = mdo || '';
+  atualizarGastosDisplay();
+}
+
+function salvarGastos() {
+  var meta = parseFloat(document.getElementById('gasto-meta').value) || 0;
+  var mdo = parseFloat(document.getElementById('gasto-mdo').value) || 0;
+  localStorage.setItem('gasto_meta', meta);
+  localStorage.setItem('gasto_mdo', mdo);
+  atualizarGastosDisplay();
+}
+
+function salvarGastosFinanceiro() {
+  var meta = parseFloat(document.getElementById('fin-meta').value) || 0;
+  var mdo = parseFloat(document.getElementById('fin-mdo').value) || 0;
+  localStorage.setItem('gasto_meta', meta);
+  localStorage.setItem('gasto_mdo', mdo);
+  carregarFinanceiro();
+}
+
+function atualizarGastosDisplay() {
+  var meta = parseFloat(localStorage.getItem('gasto_meta') || 0);
+  var mdo = parseFloat(localStorage.getItem('gasto_mdo') || 0);
+  var total = meta + mdo;
+  var el = document.getElementById('d-gastos');
+  if (el) el.textContent = 'R$ ' + total.toFixed(2).replace('.',',');
+}
+
+// ============ DASHBOARD ============
+async function carregarDashboard() {
   try {
-    const r = await fetch('/api/contatos');
-    leads = await r.json();
-    renderLeads(); renderChatList(); renderDash(); renderFinanceiro();
-  } catch(e){ console.error(e); }
+    var resp = await fetch('/api/dashboard');
+    var data = await resp.json();
+    document.getElementById('d-total').textContent = data.total || 0;
+    var fat = parseFloat(data.faturamento_real) || 0;
+    var prev = parseFloat(data.previsao_entrada) || 0;
+    var meta = parseFloat(localStorage.getItem('gasto_meta') || 0);
+    var mdo = parseFloat(localStorage.getItem('gasto_mdo') || 0);
+    var gastos = meta + mdo;
+    var resultado = fat - gastos;
+    document.getElementById('d-fat').textContent = 'R$ ' + fat.toFixed(2).replace('.',',');
+    document.getElementById('d-prev').textContent = 'R$ ' + prev.toFixed(2).replace('.',',');
+    document.getElementById('d-gastos').textContent = 'R$ ' + gastos.toFixed(2).replace('.',',');
+    var resEl = document.getElementById('d-result');
+    resEl.textContent = 'R$ ' + resultado.toFixed(2).replace('.',',');
+    resEl.className = 'card-value ' + (resultado >= 0 ? 'green' : 'red');
+    ['novo','em_contato','qualificado','fechado','perdido'].forEach(function(s) {
+      var el = document.getElementById('f-' + s);
+      if (el) el.textContent = data[s === 'em_contato' ? 'em_contato' : s + 's'] || data[s] || 0;
+    });
+  } catch(e) { console.error('Erro dashboard:', e); }
 }
 
-function nav(page){
-  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
-  document.querySelector(`[onclick="nav('${page}')"]`).classList.add('active');
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');
-  const titles = {dashboard:'Dashboard',leads:'Leads',chat:'Chat WhatsApp',financeiro:'Financeiro'};
-  document.getElementById('page-title').textContent = titles[page]||page;
-  const act = document.getElementById('topbar-actions');
-  act.innerHTML = '';
-  if(page==='leads') act.innerHTML = '<button class="btn btn-primary" onclick="abrirModal()">+ Novo Lead</button>';
-  if(page==='financeiro'){ carregarGastos(); renderFinanceiro(); }
-  if(page==='dashboard') renderDash();
-  if(page==='chat') renderChatList();
+// ============ LEADS ============
+async function carregarLeads() {
+  try {
+    var resp = await fetch('/api/contatos');
+    todosLeads = await resp.json();
+    renderLeads(todosLeads);
+    renderChatList(todosLeads);
+  } catch(e) { console.error('Erro leads:', e); }
 }
 
-function renderDash(){
-  const g = getGastos();
-  const fechados = leads.filter(l=>l.status==='fechado');
-  const fat = fechados.filter(l=>l.pago).reduce((s,l)=>s+(parseFloat(l.valor)||0),0);
-  const prev = fechados.filter(l=>!l.pago).reduce((s,l)=>s+(parseFloat(l.valor)||0),0);
-  const totalG = g.meta + g.mdo;
-  const result = fat - totalG;
-  document.getElementById('d-leads').textContent = leads.length;
-  document.getElementById('d-fechados').textContent = fechados.length;
-  document.getElementById('d-fat').textContent = fmt(fat);
-  document.getElementById('d-prev').textContent = fmt(prev);
-  document.getElementById('d-gastos').textContent = fmt(totalG);
-  const re = document.getElementById('d-result');
-  re.textContent = fmt(result);
-  re.className = 'card-value '+(result>=0?'green':'red');
-  const statusMap = {novo:'Novo',frio:'Frio',em_contato:'Em Contato',quente:'Quente',qualificado:'Qualificado',fechado:'Fechado',perdido:'Perdido'};
-  const counts = {};
-  leads.forEach(l=>{ counts[l.status]=(counts[l.status]||0)+1; });
-  document.getElementById('funil-grid').innerHTML = Object.entries(statusMap).map(([k,v])=>`
-    <div class="funil-item"><div class="count">${counts[k]||0}</div><div class="label">${v}</div></div>`).join('');
+function filtrarLeads() {
+  var q = document.getElementById('search-leads').value.toLowerCase();
+  var status = document.getElementById('filter-status').value;
+  var filtrados = todosLeads.filter(function(l) {
+    var match = !q || (l.nome||'').toLowerCase().includes(q) || (l.empresa||'').toLowerCase().includes(q) || (l.telefone||'').toLowerCase().includes(q);
+    var matchStatus = !status || l.status === status;
+    return match && matchStatus;
+  });
+  renderLeads(filtrados);
 }
 
-function renderLeads(lista){
-  const list = lista || leads;
-  const el = document.getElementById('leads-list');
-  if(!list.length){ el.innerHTML='<div style="text-align:center;color:#333;padding:40px;font-size:14px">Nenhum lead encontrado</div>'; return; }
-  el.innerHTML = list.map(l=>{
-    const tel = (l.telefone||'').replace(/\D/g,'');
-    const waHref = tel ? `https://wa.me/${tel}` : '#';
-    const pago = l.pago;
-    return `<div class="lead-card" onclick="abrirModal(${l.id})">
-      <div class="lead-avatar">${ini(l.nome)}</div>
-      <div class="lead-info">
-        <div class="lead-name">${l.nome||'Sem nome'}</div>
-        <div class="lead-phone">${l.telefone||'—'}${l.empresa?' · '+l.empresa:''}</div>
-      </div>
-      <div class="lead-meta">
-        ${l.valor ? `<span class="lead-value">${fmt(l.valor)}</span>` : ''}
-        <div class="pago-check ${pago?'ok':''}" title="${pago?'Pago':'Não pago'}">
-          ${pago?`<svg viewBox="0 0 12 12" width="10" height="10"><polyline points="2,6 5,9 10,3" stroke="#000" stroke-width="2.5" fill="none"/></svg>`:''}
-        </div>
-        <span class="badge badge-${l.status||'novo'}">${(l.status||'novo').replace('_',' ')}</span>
-        <span style="font-size:11px;color:#444;min-width:28px">${timeAgo(l.criado_em)}</span>
-        ${tel?`<a class="wa-btn" href="${waHref}" target="_blank" onclick="event.stopPropagation()" title="Abrir WhatsApp">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="#2ecc71" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
-        </a>` : ''}
-      </div>
-    </div>`;
+function ini(nome) {
+  if (!nome) return '?';
+  var partes = nome.trim().split(' ');
+  if (partes.length >= 2) return (partes[0][0] + partes[partes.length-1][0]).toUpperCase();
+  return nome[0].toUpperCase();
+}
+
+function renderLeads(leads) {
+  var list = document.getElementById('leads-list');
+  if (!list) return;
+  if (!leads || leads.length === 0) {
+    list.innerHTML = '<div class="empty-state"><p>Nenhum lead encontrado</p></div>';
+    return;
+  }
+  list.innerHTML = leads.map(function(l) {
+    var tel = (l.telefone || '').replace(/\D/g,'');
+    var waHref = tel ? 'https://wa.me/' + tel : '#';
+    var statusClass = 'status-' + (l.status || 'novo');
+    var statusText = { novo:'Novo', em_contato:'Em Contato', qualificado:'Qualificado', fechado:'Fechado', perdido:'Perdido', frio:'Frio', quente:'Quente' }[l.status] || l.status || 'Novo';
+    var valor = parseFloat(l.valor) || 0;
+    var valorHtml = valor > 0 ? '<span class="lead-valor">R$ ' + valor.toFixed(2).replace('.',',') + '</span>' : '';
+    var pagoHtml = valor > 0 ? '<span class="' + (l.pago ? 'lead-pago' : 'lead-nao-pago') + '">' + (l.pago ? 'PAGO' : 'PENDENTE') + '</span>' : '';
+    return '<div class="lead-card" onclick="abrirModalEditar(' + l.id + ')">' +
+      '<div class="lead-avatar">' + ini(l.nome) + '</div>' +
+      '<div class="lead-info"><div class="lead-name">' + (l.nome||'Sem nome') + '</div>' +
+      '<div class="lead-sub">' + (l.empresa ? l.empresa + ' · ' : '') + (l.telefone||'') + '</div></div>' +
+      '<div class="lead-meta">' + valorHtml + pagoHtml +
+      '<span class="status-badge ' + statusClass + '">' + statusText + '</span>' +
+      (tel ? '<a class="wa-btn" href="' + waHref + '" target="_blank" onclick="event.stopPropagation()" title="Abrir WhatsApp"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>' : '') +
+      '</div></div>';
   }).join('');
 }
 
-function filtrarLeads(){
-  const q = document.getElementById('lead-search').value.toLowerCase();
-  const s = document.getElementById('lead-filter').value;
-  let r = leads;
-  if(q) r = r.filter(l=>(l.nome||'').toLowerCase().includes(q)||(l.telefone||'').includes(q)||(l.empresa||'').toLowerCase().includes(q));
-  if(s) r = r.filter(l=>l.status===s);
-  renderLeads(r);
+// ============ MODAL LEAD ============
+function abrirModalNovo() {
+  leadAtualId = null;
+  document.getElementById('modal-title').textContent = 'Novo Lead';
+  ['m-nome','m-empresa','m-telefone','m-email','m-notas'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('m-status').value = 'novo';
+  document.getElementById('m-origem').value = 'manual';
+  document.getElementById('m-valor').value = '';
+  document.getElementById('m-pago').checked = false;
+  document.getElementById('modal-lead').classList.add('open');
 }
 
-function renderChatList(){
-  const el = document.getElementById('chat-list-panel');
-  if(!leads.length){ el.innerHTML='<div style="padding:20px;color:#333;text-align:center;font-size:13px">Nenhum lead</div>'; return; }
-  el.innerHTML = leads.map(l=>`
-    <div class="chat-item ${chatAtivoId===l.id?'active':''}" onclick="abrirChat(${l.id})">
-      <div class="chat-avatar">${ini(l.nome)}</div>
-      <div class="chat-item-info">
-        <div class="chat-item-name">${l.nome||'Sem nome'}</div>
-        <div class="chat-item-prev">${l.telefone||'—'}</div>
-      </div>
-    </div>`).join('');
+function abrirModalEditar(id) {
+  var lead = todosLeads.find(function(l){ return l.id === id; });
+  if (!lead) return;
+  leadAtualId = id;
+  document.getElementById('modal-title').textContent = 'Editar Lead';
+  document.getElementById('m-nome').value = lead.nome || '';
+  document.getElementById('m-empresa').value = lead.empresa || '';
+  document.getElementById('m-telefone').value = lead.telefone || '';
+  document.getElementById('m-email').value = lead.email || '';
+  document.getElementById('m-status').value = lead.status || 'novo';
+  document.getElementById('m-origem').value = lead.origem || 'manual';
+  document.getElementById('m-valor').value = lead.valor || '';
+  document.getElementById('m-pago').checked = lead.pago || false;
+  document.getElementById('m-notas').value = lead.notas || '';
+  document.getElementById('modal-lead').classList.add('open');
 }
 
-async function abrirChat(id){
-  chatAtivoId = id;
-  renderChatList();
-  const lead = leads.find(l=>l.id===id) || {};
-  const tel = (lead.telefone||'').replace(/\D/g,'');
-  const waHref = tel ? `https://wa.me/${tel}` : '#';
+function fecharModal() {
+  document.getElementById('modal-lead').classList.remove('open');
+}
+
+async function salvarLead() {
+  var nome = document.getElementById('m-nome').value.trim();
+  if (!nome) { alert('Nome obrigatorio'); return; }
+  var dados = {
+    nome: nome,
+    empresa: document.getElementById('m-empresa').value.trim(),
+    telefone: document.getElementById('m-telefone').value.trim(),
+    email: document.getElementById('m-email').value.trim(),
+    status: document.getElementById('m-status').value,
+    origem: document.getElementById('m-origem').value,
+    valor: parseFloat(document.getElementById('m-valor').value) || 0,
+    pago: document.getElementById('m-pago').checked,
+    notas: document.getElementById('m-notas').value.trim(),
+    tags: []
+  };
   try {
-    const r = await fetch(`/api/conversas/${id}`);
-    const msgs = await r.json();
-    const chatMain = document.getElementById('chat-main');
-    chatMain.innerHTML = `
-      <div class="chat-header">
-        <div class="chat-avatar">${ini(lead.nome)}</div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:600;color:#fff">${lead.nome||'Sem nome'}</div>
-          <div style="font-size:11px;color:#555">${lead.telefone||'—'}</div>
-        </div>
-        ${tel?`<a class="wa-btn" href="${waHref}" target="_blank" title="Abrir no WhatsApp">
-          <svg viewBox="0 0 24 24" width="17" height="17"><path fill="#2ecc71" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305
+    var url = leadAtualId ? '/api/contatos/' + leadAtualId : '/api/contatos';
+    var method = leadAtualId ? 'PUT' : 'POST';
+    var resp = await fetch(url, { method: method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(dados) });
+    if (!resp.ok) throw new Error('Erro ao salvar');
+    fecharModal();
+    carregarLeads();
+    carregarDashboard();
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+document.getElementById('modal-lead').addEventListener('click', function(e) {
+  if (e.target === this) fecharModal();
+});
+
+// ============ CHAT ============
+function renderChatList(leads) {
+  var items = document.getElementById('chat-list-items');
+  if (!items) return;
+  if (!leads || leads.length === 0) {
+    items.innerHTML = '<div style="padding:16px;color:#444;font-size:13px">Nenhuma conversa</div>';
+    return;
+  }
+  items.innerHTML = leads.map(function(l) {
+    return '<div class="chat-list-item' + (chatLeadAtivo === l.id ? ' active' : '') + '" onclick="abrirChat(' + l.id + ')">' +
+      '<div class="cli-name">' + (l.nome||'Sem nome') + '</div>' +
+      '<div class="cli-preview">' + (l.telefone||'') + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function carregarListaChat() {
+  if (todosLeads.length > 0) {
+    renderChatList(todosLeads);
+  } else {
+    carregarLeads();
+  }
+}
+
+async function abrirChat(leadId) {
+  chatLeadAtivo = leadId;
+  var lead = todosLeads.find(function(l){ return l.id === leadId; });
+  if (!lead) return;
+
+  renderChatList(todosLeads);
+
+  var tel = (lead.telefone || '').replace(/\D/g,'');
+  var waHref = tel ? 'https://wa.me/' + tel : '#';
+
+  var chatMain = document.getElementById('chat-main');
+  chatMain.innerHTML =
+    '<div class="chat-header">' +
+    '<div class="chat-avatar">' + ini(lead.nome) + '</div>' +
+    '<div style="flex:1"><div style="font-size:14px;font-weight:600;color:#fff">' + (lead.nome||'Sem nome') + '</div>' +
+    '<div style="font-size:11px;color:#555">' + (lead.telefone||'') + '</div></div>' +
+    (tel ? '<a class="wa-btn" href="' + waHref + '" target="_blank" title="Abrir WhatsApp"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>' : '') +
+    '</div>' +
+    '<div class="chat-messages" id="chat-msgs"></div>' +
+    '<div class="chat-input-area">' +
+    '<textarea class="chat-input" id="chat-input-text" placeholder="Digite uma mensagem..." rows="1" onkeydown="chatEnterEnviar(event)"></textarea>' +
+    '<button class="chat-send-btn" onclick="enviarMensagemChat()">Enviar</button>' +
+    '</div>';
+
+  await carregarMensagens(leadId);
+}
+
+async function carregarMensagens(leadId) {
+  try {
+    var resp = await fetch('/api/contatos/' + leadId + '/conversas');
+    var msgs = await resp.json();
+    var container = document.getElementById('chat-msgs');
+    if (!container) return;
+    if (!msgs || msgs.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:#444;font-size:13px;padding:40px">Sem mensagens ainda</div>';
+      return;
+    }
+    container.innerHTML = msgs.map(function(m) {
+      var dt = new Date(m.criado_em);
+      var hora = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      var data = dt.toLocaleDateString('pt-BR');
+      return '<div class="msg ' + m.direcao + '">' +
+        m.mensagem.replace(/\n/g,'<br>') +
+        '<div class="msg-time">' + data + ' ' + hora + '</div>' +
+        '</div>';
+    }).join('');
+    container.scrollTop = container.scrollHeight;
+  } catch(e) { console.error('Erro msgs:', e); }
+}
+
+function chatEnterEnviar(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    enviarMensagemChat();
+  }
+}
+
+async function enviarMensagemChat() {
+  var input = document.getElementById('chat-input-text');
+  if (!input || !chatLeadAtivo) return;
+  var msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  try {
+    await fetch('/api/contatos/' + chatLeadAtivo + '/mensagem', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ mensagem: msg })
+    });
+    await carregarMensagens(chatLeadAtivo);
+  } catch(e) { alert('Erro ao enviar: ' + e.message); }
+}
+
+// ============ FINANCEIRO ============
+function carregarFinanceiro() {
+  var meta = parseFloat(localStorage.getItem('gasto_meta') || 0);
+  var mdo = parseFloat(localStorage.getItem('gasto_mdo') || 0);
+  var finMeta = document.getElementById('fin-meta');
+  var finMdo = document.getElementById('fin-mdo');
+  if (finMeta) finMeta.value = meta || '';
+  if (finMdo) finMdo.value = mdo || '';
+
+  fetch('/api/dashboard').then(function(r){ return r.json(); }).then(function(data) {
+    var fat = parseFloat(data.faturamento_real) || 0;
+    var prev = parseFloat(data.previsao_entrada) || 0;
+    var gastos = meta + mdo;
+    var resultado = fat - gastos;
+    var fatEl = document.getElementById('fin-fat');
+    var prevEl = document.getElementById('fin-prev');
+    var gastosEl = document.getElementById('fin-gastos-total');
+    var resEl = document.getElementById('fin-resultado');
+    if (fatEl) fatEl.textContent = 'R$ ' + fat.toFixed(2).replace('.',',');
+    if (prevEl) prevEl.textContent = 'R$ ' + prev.toFixed(2).replace('.',',');
+    if (gastosEl) gastosEl.textContent = 'R$ ' + gastos.toFixed(2).replace('.',',');
+    if (resEl) {
+      resEl.textContent = 'R$ ' + resultado.toFixed(2).replace('.',',');
+      resEl.className = 'fin-total ' + (resultado >= 0 ? '' : 'red');
+    }
+  }).catch(function(e){ console.error(e); });
+}
+</script>
+</body>
+</html>
