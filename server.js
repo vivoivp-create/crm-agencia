@@ -41,6 +41,12 @@ async function initDB() {
     );
     ALTER TABLE contatos ADD COLUMN IF NOT EXISTS valor DECIMAL(10,2) DEFAULT 0;
     ALTER TABLE contatos ADD COLUMN IF NOT EXISTS pago BOOLEAN DEFAULT false;
+    ALTER TABLE contatos ADD COLUMN IF NOT EXISTS nicho VARCHAR(100);
+    ALTER TABLE contatos ADD COLUMN IF NOT EXISTS instagram VARCHAR(200);
+    ALTER TABLE contatos ADD COLUMN IF NOT EXISTS ultima_mensagem_em TIMESTAMP;
+    ALTER TABLE contatos ADD COLUMN IF NOT EXISTS followup_1h_enviado BOOLEAN DEFAULT false;
+    ALTER TABLE contatos ADD COLUMN IF NOT EXISTS followup_12h_enviado BOOLEAN DEFAULT false;
+    ALTER TABLE contatos ADD COLUMN IF NOT EXISTS followup_20h_enviado BOOLEAN DEFAULT false;
   `);
   console.log('DB iniciado');
 }
@@ -72,8 +78,32 @@ function detectarNicho(historico) {
   if (texto.includes('hambur') || texto.includes('burger') || texto.includes('lanche') || texto.includes('fast food')) {
     return 'hamburguer';
   }
-  if (texto.includes('japones') || texto.includes('japones') || texto.includes('sushi') || texto.includes('temaki') || texto.includes('oriental')) {
+  if (texto.includes('japones') || texto.includes('sushi') || texto.includes('temaki') || texto.includes('oriental')) {
     return 'japones';
+  }
+  return null;
+}
+
+function detectarInstagram(historico) {
+  for (let i = historico.length - 1; i >= 0; i--) {
+    const m = historico[i];
+    if (m.role === 'user') {
+      const match = m.content.match(/@([\w.]+)/);
+      if (match) return '@' + match[1];
+      const matchUrl = m.content.match(/instagram\.com\/([\w.]+)/i);
+      if (matchUrl) return '@' + matchUrl[1];
+    }
+  }
+  return null;
+}
+
+function detectarNomeCliente(historico) {
+  for (let i = 0; i < historico.length; i++) {
+    const m = historico[i];
+    if (m.role === 'user') {
+      const match = m.content.match(/(?:meu nome[\s\S]*?[eé]|me chamo|sou o|sou a)\s+([A-Z][a-záàâãéèêíïóôõúç]+(?:\s[A-Z][a-záàâãéèêíïóôõúç]+)*)/i);
+      if (match) return match[1];
+    }
   }
   return null;
 }
@@ -107,16 +137,53 @@ function detectarEtapa(historico) {
   return { etapa: 1, nicho: null };
 }
 
+function vendaNaoDesenvolveu(etapa) {
+  return etapa < 6;
+}
+
+function buildFollowupPrompt(etapaInfo, sequencia) {
+  const etapa = etapaInfo.etapa;
+  const nicho = etapaInfo.nicho;
+  const nichoLabel = nicho === 'hamburguer' ? 'hamburguer/fast food' : (nicho === 'japones' ? 'restaurante japones' : 'restaurante');
+
+  const mensagens = {
+    1: {
+      1: 'Ei, sumiu! Ainda tem interesse em aumentar o movimento do seu ' + nichoLabel + '? Me conta mais sobre seu negocio',
+      2: 'Oi! So passando pra lembrar que temos resultados incriveis para ' + nichoLabel + '. Quer ver alguns exemplos do nosso trabalho? Pode ser um divisor de aguas pro seu negocio',
+      3: 'Ultima chamada! Nossos clientes de ' + nichoLabel + ' estao faturando muito mais com nossas estrategias de conteudo. Se quiser saber como, e so me chamar. Estou aqui!'
+    },
+    2: {
+      1: 'Oi! Vi que voce nao chegou a ver nosso portfolio. Os resultados que entregamos para ' + nichoLabel + ' sao bem impressionantes. Quer dar uma olhadinha?',
+      2: 'E ai, tudo bem? Estou aqui caso queira retomar nossa conversa sobre marketing para ' + nichoLabel + '. Temos cases de sucesso que podem te interessar',
+      3: 'Ultima oportunidade! Se tiver interesse em transformar o marketing do seu ' + nichoLabel + ', e so responder essa mensagem. Estamos com agenda aberta essa semana!'
+    },
+    3: {
+      1: 'Oi! Vi que ficou na duvida sobre os planos. Posso te explicar melhor as diferencas entre eles. Qual parte te gerou mais duvida?',
+      2: 'E ai! Ainda pensando? Lembra que voce so paga depois de ver o material pronto. Zero risco pra voce. O que acha de a gente dar o proximo passo?',
+      3: 'Ultimo aviso! Nossa agenda esta quase cheia essa semana. Se tiver interesse em garantir sua vaga, e so responder agora. O investimento se paga com poucos clientes a mais por mes!'
+    },
+    4: {
+      1: 'Oi! Falta pouco! So preciso do seu nome e do @ do instagram da sua empresa pra gente finalizar. Me passa essas infos?',
+      2: 'E ai, ainda por aqui? E simples: me passa seu nome completo e o instagram do seu negocio que ja encaminhamos tudo pro Fabiano!',
+      3: 'Ultimo recado! Se ainda tiver interesse, me passa so o seu nome e o @ do instagram. O Fabiano ja esta esperando pra entrar em contato com voce!'
+    }
+  };
+
+  const etapaKey = etapa <= 4 ? etapa : 4;
+  const msgs = mensagens[etapaKey] || mensagens[1];
+  return msgs[sequencia] || msgs[1];
+}
+
 function buildSystemPrompt(etapaInfo, ehCampanha) {
-  var etapa = etapaInfo.etapa;
-  var nicho = etapaInfo.nicho;
+  const etapa = etapaInfo.etapa;
+  const nicho = etapaInfo.nicho;
 
-  var videosHamburguer = 'https://www.youtube.com/shorts/qv-QmvltN5k\nhttps://www.youtube.com/shorts/NuV23DgBTnk\nhttps://www.youtube.com/shorts/Z58kSeUO8k4';
-  var videosJapones = 'https://www.youtube.com/shorts/36uq3MaaHic\nhttps://www.youtube.com/shorts/jrbzf5kYPuY\nhttps://www.youtube.com/shorts/n78ISZ6acwk';
-  var planoHamburguer = 'Metodo Burger Viral:\n- Basico: R$69,90/mes\n- Standard: R$197,90/mes\n- Max Plus: R$297,90/mes';
-  var planoJapones = 'Metodo Fome Visual:\n- Basico: R$89,90/mes\n- Standard: R$197,90/mes\n- Max Plus: R$297,90/mes';
+  const videosHamburguer = 'https://www.youtube.com/shorts/qv-QmvltN5k\nhttps://www.youtube.com/shorts/NuV23DgBTnk\nhttps://www.youtube.com/shorts/Z58kSeUO8k4';
+  const videosJapones = 'https://www.youtube.com/shorts/36uq3MaaHic\nhttps://www.youtube.com/shorts/jrbzf5kYPuY\nhttps://www.youtube.com/shorts/n78ISZ6acwk';
+  const planoHamburguer = 'Metodo Burger Viral:\n- Basico: R$69,90/mes\n- Standard: R$197,90/mes\n- Max Plus: R$297,90/mes';
+  const planoJapones = 'Metodo Fome Visual:\n- Basico: R$89,90/mes\n- Standard: R$197,90/mes\n- Max Plus: R$297,90/mes';
 
-  var instrucaoEtapa = '';
+  let instrucaoEtapa = '';
 
   if (etapa === 1) {
     if (ehCampanha) {
@@ -125,18 +192,18 @@ function buildSystemPrompt(etapaInfo, ehCampanha) {
       instrucaoEtapa = 'INSTRUCAO ETAPA 1: Descubra o nicho do negocio. Pergunte de forma amigavel e curta qual o tipo de negocio: hamburguer/fast food, restaurante japones, ou outro tipo.';
     }
   } else if (etapa === 2) {
-    var videos = nicho === 'hamburguer' ? videosHamburguer : (nicho === 'japones' ? videosJapones : null);
-    var metodo = nicho === 'hamburguer' ? 'Metodo Burger Viral' : (nicho === 'japones' ? 'Metodo Fome Visual' : null);
+    const videos = nicho === 'hamburguer' ? videosHamburguer : (nicho === 'japones' ? videosJapones : null);
+    const metodo = nicho === 'hamburguer' ? 'Metodo Burger Viral' : (nicho === 'japones' ? 'Metodo Fome Visual' : null);
     if (videos) {
       instrucaoEtapa = 'INSTRUCAO ETAPA 2: Nicho e ' + nicho + '. Envie agora os 3 links do portfolio do ' + metodo + '. Copie e envie exatamente:\n' + videos + '\nDepois pergunte: fez sentido? O que achou?';
     } else {
       instrucaoEtapa = 'INSTRUCAO ETAPA 2: Outro nicho. Mostre o canal: https://www.youtube.com/@Vigoredigital e pergunte o que achou.';
     }
   } else if (etapa === 3) {
-    var planos = nicho === 'hamburguer' ? planoHamburguer : (nicho === 'japones' ? planoJapones : 'nossos planos de marketing digital');
+    const planos = nicho === 'hamburguer' ? planoHamburguer : (nicho === 'japones' ? planoJapones : 'nossos planos de marketing digital');
     instrucaoEtapa = 'INSTRUCAO ETAPA 3: Portfolio ja enviado. Gere desejo e apresente os planos:\n' + planos + '\nSempre diga: Voce so paga apos ver o material pronto. Pergunte qual plano faz mais sentido.';
   } else if (etapa === 4) {
-    instrucaoEtapa = 'INSTRUCAO ETAPA 4: Planos apresentados. Capture o nome: pergunte qual e o nome completo e o nome do estabelecimento.';
+    instrucaoEtapa = 'INSTRUCAO ETAPA 4: Planos apresentados. Capture o nome e o instagram: pergunte qual e o nome completo, o nome do estabelecimento e o @ do instagram da empresa.';
   } else if (etapa === 5) {
     instrucaoEtapa = 'INSTRUCAO ETAPA 5: Nome capturado. Informe que o Fabiano entrara em contato em breve para fechar os detalhes. Finalize de forma calorosa.';
   } else {
@@ -161,6 +228,63 @@ async function enviarMensagemWhatsApp(para, mensagem) {
   return data;
 }
 
+async function processarFollowups() {
+  try {
+    const agora = new Date();
+
+    const leads = await pool.query(`
+      SELECT * FROM contatos
+      WHERE status IN ('novo', 'em_contato', 'qualificado')
+        AND ultima_mensagem_em IS NOT NULL
+    `);
+
+    for (const contato of leads.rows) {
+      const ultima = new Date(contato.ultima_mensagem_em);
+      const diffHoras = (agora - ultima) / (1000 * 60 * 60);
+
+      const historicoRaw = await pool.query(
+        'SELECT * FROM conversas WHERE contato_id = $1 ORDER BY criado_em ASC LIMIT 30',
+        [contato.id]
+      );
+      const historico = historicoRaw.rows.map(m => ({
+        role: m.direcao === 'entrada' ? 'user' : 'assistant',
+        content: m.mensagem
+      }));
+      const etapaInfo = detectarEtapa(historico);
+
+      if (!vendaNaoDesenvolveu(etapaInfo.etapa)) continue;
+
+      if (diffHoras >= 1 && !contato.followup_1h_enviado) {
+        const msg = buildFollowupPrompt(etapaInfo, 1);
+        await enviarMensagemWhatsApp(contato.telefone, msg);
+        await pool.query('INSERT INTO conversas (contato_id, mensagem, direcao) VALUES ($1,$2,$3)', [contato.id, msg, 'saida']);
+        await pool.query('UPDATE contatos SET followup_1h_enviado=true, atualizado_em=NOW() WHERE id=$1', [contato.id]);
+        console.log('Follow-up 1h enviado para', contato.telefone);
+      }
+
+      if (diffHoras >= 12 && !contato.followup_12h_enviado) {
+        const msg = buildFollowupPrompt(etapaInfo, 2);
+        await enviarMensagemWhatsApp(contato.telefone, msg);
+        await pool.query('INSERT INTO conversas (contato_id, mensagem, direcao) VALUES ($1,$2,$3)', [contato.id, msg, 'saida']);
+        await pool.query('UPDATE contatos SET followup_12h_enviado=true, atualizado_em=NOW() WHERE id=$1', [contato.id]);
+        console.log('Follow-up 12h enviado para', contato.telefone);
+      }
+
+      if (diffHoras >= 20 && !contato.followup_20h_enviado) {
+        const msg = buildFollowupPrompt(etapaInfo, 3);
+        await enviarMensagemWhatsApp(contato.telefone, msg);
+        await pool.query('INSERT INTO conversas (contato_id, mensagem, direcao) VALUES ($1,$2,$3)', [contato.id, msg, 'saida']);
+        await pool.query("UPDATE contatos SET followup_20h_enviado=true, status='perdido', atualizado_em=NOW() WHERE id=$1", [contato.id]);
+        console.log('Follow-up 20h (final) enviado para', contato.telefone);
+      }
+    }
+  } catch (err) {
+    console.error('Erro processarFollowups:', err);
+  }
+}
+
+setInterval(processarFollowups, 5 * 60 * 1000);
+
 async function processarMensagem(telefone, mensagem) {
   try {
     const telCorrigido = corrigirTelefone(telefone);
@@ -178,26 +302,43 @@ async function processarMensagem(telefone, mensagem) {
     const contatoId = contato.rows[0].id;
 
     await pool.query(
-      'INSERT INTO conversas (contato_id, mensagem, direcao) VALUES ($1,$2,$3)',
-      [contatoId, mensagem, 'entrada']
+      'UPDATE contatos SET ultima_mensagem_em=NOW(), followup_1h_enviado=false, followup_12h_enviado=false, followup_20h_enviado=false, atualizado_em=NOW() WHERE id=$1',
+      [contatoId]
     );
+
+    await pool.query('INSERT INTO conversas (contato_id, mensagem, direcao) VALUES ($1,$2,$3)', [contatoId, mensagem, 'entrada']);
 
     const historicoRaw = await pool.query(
       'SELECT * FROM conversas WHERE contato_id = $1 ORDER BY criado_em ASC LIMIT 30',
       [contatoId]
     );
 
-    const historico = historicoRaw.rows.map(function(m) {
-      return { role: m.direcao === 'entrada' ? 'user' : 'assistant', content: m.mensagem };
-    });
+    const historico = historicoRaw.rows.map(m => ({
+      role: m.direcao === 'entrada' ? 'user' : 'assistant',
+      content: m.mensagem
+    }));
 
     const etapaInfo = detectarEtapa(historico);
 
     if (etapaInfo.etapa >= 2 && contato.rows[0].status === 'novo') {
-      await pool.query('UPDATE contatos SET status=$1, atualizado_em=NOW() WHERE id=$2', ['em_contato', contatoId]);
+      await pool.query("UPDATE contatos SET status='em_contato', atualizado_em=NOW() WHERE id=$1", [contatoId]);
     }
+
     if (etapaInfo.etapa >= 4 && (contato.rows[0].status === 'novo' || contato.rows[0].status === 'em_contato')) {
-      await pool.query('UPDATE contatos SET status=$1, atualizado_em=NOW() WHERE id=$2', ['qualificado', contatoId]);
+      const nomeDetectado = detectarNomeCliente(historico);
+      const instagramDetectado = detectarInstagram(historico);
+      const nichoDetectado = etapaInfo.nicho;
+
+      await pool.query(
+        `UPDATE contatos SET
+          status='qualificado',
+          nicho=COALESCE($1, nicho),
+          instagram=COALESCE($2, instagram),
+          nome=COALESCE(NULLIF($3,''), nome),
+          atualizado_em=NOW()
+        WHERE id=$4`,
+        [nichoDetectado, instagramDetectado, nomeDetectado, contatoId]
+      );
     }
 
     const systemPrompt = buildSystemPrompt(etapaInfo, ehCampanha);
