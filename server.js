@@ -2,445 +2,367 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
-const https = require('https');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-// Criar tabela leads se não existir
 async function initDB() {
-    await pool.query(`
-        CREATE TABLE IF NOT EXISTS leads (
-              id SERIAL PRIMARY KEY,
-                    telefone VARCHAR(20) UNIQUE NOT NULL,
-                          nome VARCHAR(255),
-                                nicho VARCHAR(50),
-                                      status VARCHAR(30) DEFAULT 'frio',
-                                            orcamento DECIMAL(10,2) DEFAULT 0,
-                                                  adiantamento DECIMAL(10,2) DEFAULT 0,
-                                                        pago DECIMAL(10,2) DEFAULT 0,
-                                                              checklist JSONB DEFAULT '{"orcamento":false,"adiantamento":false,"pago":false,"aguardando_materiais":false,"trabalho_pronto":false}',
-                                                                    ultima_mensagem TEXT,
-                                                                          historico_resumo TEXT,
-                                                                                reaquecimento_count INTEGER DEFAULT 0,
-                                                                                      ultimo_contato TIMESTAMP DEFAULT NOW(),
-                                                                                            criado_em TIMESTAMP DEFAULT NOW(),
-                                                                                                  atualizado_em TIMESTAMP DEFAULT NOW()
-                                                                                                      )
-                                                                                                        `);
-    console.log('Banco de dados inicializado');
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS contatos (
+      id SERIAL PRIMARY KEY,
+      nome VARCHAR(200) NOT NULL,
+      empresa VARCHAR(200),
+      telefone VARCHAR(20),
+      email VARCHAR(200),
+      origem VARCHAR(50) DEFAULT 'manual',
+      status VARCHAR(50) DEFAULT 'novo',
+      tags TEXT[],
+      notas TEXT,
+      criado_em TIMESTAMP DEFAULT NOW(),
+      atualizado_em TIMESTAMP DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS conversas (
+      id SERIAL PRIMARY KEY,
+      contato_id INTEGER REFERENCES contatos(id) ON DELETE CASCADE,
+      mensagem TEXT NOT NULL,
+      direcao VARCHAR(10) NOT NULL CHECK (direcao IN ('entrada', 'saida')),
+      canal VARCHAR(30) DEFAULT 'whatsapp',
+      lida BOOLEAN DEFAULT false,
+      criado_em TIMESTAMP DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS projetos (
+      id SERIAL PRIMARY KEY,
+      contato_id INTEGER REFERENCES contatos(id) ON DELETE SET NULL,
+      titulo VARCHAR(200) NOT NULL,
+      descricao TEXT,
+      responsavel VARCHAR(100),
+      status VARCHAR(50) DEFAULT 'iniciando',
+      progresso INTEGER DEFAULT 0 CHECK (progresso >= 0 AND progresso <= 100),
+      prazo DATE,
+      criado_em TIMESTAMP DEFAULT NOW(),
+      atualizado_em TIMESTAMP DEFAULT NOW()
+    );
+  `);
+  console.log('Banco de dados inicializado.');
 }
 
-// Função para chamar a API do Anthropic via https nativo
-function callAnthropic(apiKey, messageText) {
-    return new Promise((resolve, reject) => {
-          const payload = JSON.stringify({
-                  model: 'claude-haiku-4-5',
-                  max_tokens: 1024,
-                  system: `Você é o assistente comercial da *Vigore Agência Digital*. Responsável: Fabiano.
+app.get('/api/contatos', async (req, res) => {
+  try {
+    const { status, busca } = req.query;
+    let query = 'SELECT * FROM contatos';
+    const params = [];
+    const conditions = [];
+    if (status) { params.push(status); conditions.push(`status = $${params.length}`); }
+    if (busca) { params.push(`%${busca}%`); conditions.push(`(nome ILIKE $${params.length} OR empresa ILIKE $${params.length})`); }
+    if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
+    query += ' ORDER BY criado_em DESC';
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
 
-IDENTIDADE E TOM:
-- Fale como humano, curto e direto
+app.post('/api/contatos', async (req, res) => {
+  try {
+    const { nome, empresa, telefone, email, origem, status, notas } = req.body;
+    const result = await pool.query(
+      'INSERT INTO contatos (nome, empresa, telefone, email, origem, status, notas) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+      [nome, empresa, telefone, email, origem || 'manual', status || 'novo', notas]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.put('/api/contatos/:id', async (req, res) => {
+  try {
+    const { nome, empresa, telefone, email, status, notas } = req.body;
+    const result = await pool.query(
+      'UPDATE contatos SET nome=$1, empresa=$2, telefone=$3, email=$4, status=$5, notas=$6, atualizado_em=NOW() WHERE id=$7 RETURNING *',
+      [nome, empresa, telefone, email, status, notas, req.params.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.delete('/api/contatos/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM contatos WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.get('/api/conversas/:contato_id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM conversas WHERE contato_id=$1 ORDER BY criado_em ASC', [req.params.contato_id]);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.post('/api/conversas', async (req, res) => {
+  try {
+    const { contato_id, mensagem, direcao, canal } = req.body;
+    const result = await pool.query(
+      'INSERT INTO conversas (contato_id, mensagem, direcao, canal) VALUES ($1,$2,$3,$4) RETURNING *',
+      [contato_id, mensagem, direcao || 'entrada', canal || 'whatsapp']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.get('/api/projetos', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT p.*, c.nome as contato_nome FROM projetos p LEFT JOIN contatos c ON p.contato_id = c.id ORDER BY p.criado_em DESC');
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.post('/api/projetos', async (req, res) => {
+  try {
+    const { contato_id, titulo, descricao, responsavel, status, progresso, prazo } = req.body;
+    const result = await pool.query(
+      'INSERT INTO projetos (contato_id, titulo, descricao, responsavel, status, progresso, prazo) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+      [contato_id, titulo, descricao, responsavel, status || 'iniciando', progresso || 0, prazo]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.put('/api/projetos/:id', async (req, res) => {
+  try {
+    const { titulo, descricao, responsavel, status, progresso, prazo } = req.body;
+    const result = await pool.query(
+      'UPDATE projetos SET titulo=$1, descricao=$2, responsavel=$3, status=$4, progresso=$5, prazo=$6, atualizado_em=NOW() WHERE id=$7 RETURNING *',
+      [titulo, descricao, responsavel, status, progresso, prazo, req.params.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.get('/api/dashboard', async (req, res) => {
+  try {
+    const [leads, clientes, conversao, projetos, funil] = await Promise.all([
+      pool.query(`SELECT COUNT(*) FROM contatos WHERE status != 'cliente' AND status != 'perdido'`),
+      pool.query(`SELECT COUNT(*) FROM contatos WHERE status = 'cliente'`),
+      pool.query(`SELECT ROUND(COUNT(*) FILTER (WHERE status='cliente') * 100.0 / NULLIF(COUNT(*),0), 0) as taxa FROM contatos`),
+      pool.query(`SELECT COUNT(*) FROM projetos WHERE status != 'concluido'`),
+      pool.query(`SELECT status, COUNT(*) as total FROM contatos GROUP BY status ORDER BY total DESC`)
+    ]);
+    res.json({
+      leads: parseInt(leads.rows[0].count),
+      clientes: parseInt(clientes.rows[0].count),
+      conversao: parseInt(conversao.rows[0].taxa) || 0,
+      projetos_ativos: parseInt(projetos.rows[0].count),
+      funil: funil.rows
+    });
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.get('/webhook', (req, res) => {
+  const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'agencia123';
+  console.log('GET webhook - token:', req.query['hub.verify_token']);
+  if (req.query['hub.verify_token'] === VERIFY_TOKEN) {
+    res.send(req.query['hub.challenge']);
+  } else {
+    res.sendStatus(403);
+  }
+});
+
+function corrigirTelefone(telefone) {
+  if (telefone.startsWith('55') && telefone.length === 12) {
+    const ddd = telefone.slice(2, 4);
+    const numero = telefone.slice(4);
+    const telefoneCorrigido = '55' + ddd + '9' + numero;
+    console.log(`Numero corrigido: ${telefone} -> ${telefoneCorrigido}`);
+    return telefoneCorrigido;
+  }
+  return telefone;
+}
+
+function detectarNicho(texto) {
+  const t = texto.toLowerCase();
+  if (t.includes('hamburguer') || t.includes('hamburgueria') || t.includes('hambúrguer') || t.includes('burger') || t.includes('hamburgeria')) return 'hamburguer';
+  if (t.includes('japones') || t.includes('japonês') || t.includes('japonesa') || t.includes('sushi') || t.includes('temaki')) return 'japones';
+  return null;
+}
+
+function detectarEtapa(historico) {
+  const textoCompleto = historico.map(m => m.content).join(' ');
+  const nicho = detectarNicho(textoCompleto);
+  const videoEnviado = textoCompleto.includes('youtube.com/shorts');
+  const planosApresentados = textoCompleto.toLowerCase().includes('basico') || textoCompleto.toLowerCase().includes('básico') || textoCompleto.toLowerCase().includes('standard') || textoCompleto.toLowerCase().includes('max plus');
+  const leadFechado = textoCompleto.toLowerCase().includes('fabiano') && (textoCompleto.toLowerCase().includes('entrar em contato') || textoCompleto.toLowerCase().includes('fechar'));
+  if (leadFechado) return { etapa: 5, nicho };
+  if (planosApresentados) return { etapa: 4, nicho };
+  if (videoEnviado) return { etapa: 3, nicho };
+  if (nicho) return { etapa: 2, nicho };
+  return { etapa: 1, nicho: null };
+}
+
+app.post('/webhook', async (req, res) => {
+  try {
+    console.log('POST webhook recebido:', JSON.stringify(req.body).substring(0, 300));
+    const entry = req.body?.entry?.[0];
+    const change = entry?.changes?.[0];
+    const message = change?.value?.messages?.[0];
+    const contact = change?.value?.contacts?.[0];
+    if (!message || message.type !== 'text') {
+      console.log('Ignorando - nao e texto');
+      return res.sendStatus(200);
+    }
+    const telefoneOriginal = message.from;
+    const telefone = corrigirTelefone(telefoneOriginal);
+    const texto = message.text.body;
+    const nomeWhatsapp = contact?.profile?.name || 'Desconhecido';
+    console.log('Processando:', telefone, nomeWhatsapp, texto);
+    let contato = await pool.query('SELECT * FROM contatos WHERE telefone=$1', [telefone]);
+    if (contato.rows.length === 0) {
+      contato = await pool.query('SELECT * FROM contatos WHERE telefone=$1', [telefoneOriginal]);
+    }
+    if (contato.rows.length === 0) {
+      contato = await pool.query(
+        `INSERT INTO contatos (nome, telefone, origem, status) VALUES ($1,$2,'whatsapp','novo') RETURNING *`,
+        [nomeWhatsapp, telefone]
+      );
+    }
+    const contatoId = contato.rows[0].id;
+    const historico = await pool.query(
+      `SELECT mensagem, direcao FROM conversas WHERE contato_id=$1 ORDER BY criado_em ASC LIMIT 30`,
+      [contatoId]
+    );
+    const mensagensHistorico = historico.rows.map(row => ({
+      role: row.direcao === 'entrada' ? 'user' : 'assistant',
+      content: row.mensagem
+    }));
+    const { etapa, nicho } = detectarEtapa(mensagensHistorico);
+    console.log(`Etapa detectada: ${etapa} | Nicho: ${nicho}`);
+    await pool.query(
+      `INSERT INTO conversas (contato_id, mensagem, direcao, canal, lida) VALUES ($1,$2,'entrada','whatsapp',false)`,
+      [contatoId, texto]
+    );
+    mensagensHistorico.push({ role: 'user', content: texto });
+    let instrucaoEtapa = '';
+    if (etapa === 1) {
+      instrucaoEtapa = 'ETAPA ATUAL: 1 - Pergunte qual tipo de negócio o cliente tem. Seja breve e simpático. Não peça nome ainda.';
+    } else if (etapa === 2) {
+      instrucaoEtapa = `ETAPA ATUAL: 2 - Nicho já identificado: ${nicho}. Envie AGORA o link do portfólio correspondente e gere desejo. NÃO pergunte o nicho de novo.`;
+    } else if (etapa === 3) {
+      instrucaoEtapa = `ETAPA ATUAL: 3 - Vídeo já enviado. Gere mais desejo e apresente os planos do método ${nicho === 'hamburguer' ? 'Burger Viral' : 'Fome Visual'}. NÃO envie o vídeo de novo.`;
+    } else if (etapa === 4) {
+      instrucaoEtapa = 'ETAPA ATUAL: 4 - Planos já apresentados. Colete: nome completo e nome do negócio. Depois passe pro Fabiano fechar.';
+    } else {
+      instrucaoEtapa = 'ETAPA ATUAL: 5 - Lead qualificado. Mantenha conversa amigável.';
+    }
+    console.log('Chamando Claude...');
+    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 500,
+        system: `Você é o assistente comercial da Vigore Agência Digital. Responsável: Fabiano.
+
+IDENTIDADE:
+- Fale de forma humana, curta e direta
 - Nunca pareça robô
-- Use emojis com naturalidade e de acordo com o contexto (🍔 hambúrguer, 🍣 japonês, 🔥 empolgação, 💰 valores, 🤝 fechamento, ✅ confirmação)
-- Use *negrito* para destacar informações importantes (nome dos planos, valores, frases de impacto)
+- Use emojis com naturalidade
 - Regra de ouro: vender primeiro, depois coletar dados
 
-FLUXO OBRIGATÓRIO (siga essa ordem):
-1. Descobrir o nicho do cliente (hambúrguer, japonês ou outro)
-2. Enviar o link do portfólio assim que identificar o nicho
-3. Gerar desejo — perguntar: fez sentido? o que achou?
-4. Apresentar os planos com destaque visual
+FLUXO OBRIGATÓRIO (siga EXATAMENTE essa ordem, nunca pule nem repita etapa):
+1. Descobrir o nicho do cliente
+2. Enviar link do portfólio assim que identificar o nicho
+3. Gerar desejo — perguntar: fez sentido? O que achou?
+4. Apresentar os planos do método correto
 5. Capturar nome completo e nome do negócio
 6. Informar que o Fabiano vai entrar em contato para fechar
 
-REGRA CRÍTICA: Nunca entrevistar cedo. Nunca pedir nome antes de mostrar o vídeo e gerar desejo.
+REGRAS CRÍTICAS:
+- NUNCA pergunte nome antes da etapa 5
+- NUNCA repita perguntas já respondidas no histórico
+- NUNCA ignore o que o cliente já disse
+- NUNCA volte a perguntar o nicho se já foi identificado
+- Leia TODO o histórico antes de responder
 
-PORTFÓLIO — envie o link automaticamente ao identificar o nicho:
+PORTFÓLIO:
 
-🍔 HAMBÚRGUER
-*Método Burger Viral*
-👉 https://www.youtube.com/shorts/qv-QmvltN5k
+HAMBÚRGUER 🍔
+Método Burger Viral
+Link: https://www.youtube.com/shorts/qv-QmvltN5k
+Planos:
+🥉 Básico — R$69,90
+🥈 Standard — R$197,90
+🥇 Max Plus — R$297,90
 
-Após o cliente ver, apresente os planos assim:
+JAPONÊS 🍣
+Método Fome Visual
+Link: https://www.youtube.com/shorts/36uq3MaaHic
+Planos:
+🥉 Básico — R$89,90
+🥈 Standard — R$197,90
+🥇 Max Plus — R$297,90
 
-*Planos Método Burger Viral* 🍔🔥
-
-🥉 *Básico* — *R$ 69,90*
-🥈 *Standard* — *R$ 197,90*
-🥇 *Max Plus* — *R$ 297,90*
-
-💳 *Você só paga depois de ver o material pronto e aprovado!* ✅
-
-🍣 JAPONÊS
-*Método Fome Visual*
-👉 https://www.youtube.com/shorts/36uq3MaaHic
-
-Após o cliente ver, apresente os planos assim:
-
-*Planos Método Fome Visual* 🍣✨
-
-🥉 *Básico* — *R$ 89,90*
-🥈 *Standard* — *R$ 197,90*
-🥇 *Max Plus* — *R$ 297,90*
-
-💳 *Você só paga depois de ver o material pronto e aprovado!* ✅
-
-OUTROS NICHOS 🏪:
-Se não for hambúrguer nem japonês, pergunte mais sobre o negócio e adapte a conversa mostrando que a Vigore produz conteúdo visual com IA para qualquer tipo de negócio. Use emojis do segmento correspondente.
+SEMPRE DIZER: Você só paga após ver o material pronto 🔥
 
 CAPTURA DE LEAD:
-Após gerar desejo e apresentar planos, colete:
-1. *Nome completo*
-2. *Nome do negócio*
+Após apresentar planos, colete nome completo e nome do negócio.
+Depois diga: "Perfeito! Vou passar pro Fabiano agora. Ele entra em contato em breve para fechar com você 🤝"
 
-Depois diga: "*Perfeito!* Vou passar pro Fabiano agora. Ele entra em contato em breve para fechar com você 🤝🔥"
+OUTROS NICHOS:
+Se não for hambúrguer nem japonês, adapte mostrando que a Vigore produz conteúdo visual com IA para qualquer negócio.
 
-OBJEÇÕES DE PREÇO:
-Se o cliente hesitar no valor, reforce sempre:
-"*Você só paga depois de ver o material pronto e aprovado* ✅ — sem risco nenhum pra você! 🔥"
-
-REGRAS DE FORMATAÇÃO:
-- Use *negrito* para: nomes de planos, valores, frases de impacto e chamadas para ação
-- Use emojis relevantes ao nicho e ao momento da conversa
-- Mantenha as respostas curtas e com energia
-- Nunca use linguagem formal ou fria`,
-                  messages: [{ role: 'user', content: messageText }]
-          });
-
-                           const options = {
-                                   hostname: 'api.anthropic.com',
-                                   path: '/v1/messages',
-                                   method: 'POST',
-                                   headers: {
-                                             'x-api-key': apiKey,
-                                             'anthropic-version': '2023-06-01',
-                                             'content-type': 'application/json',
-                                             'content-length': Buffer.byteLength(payload)
-                                   }
-                           };
-
-                           const req = https.request(options, (res) => {
-                                   let data = '';
-                                   res.on('data', (chunk) => { data += chunk; });
-                                   res.on('end', () => {
-                                             try {
-                                                         const parsed = JSON.parse(data);
-                                                         resolve(parsed);
-                                             } catch (e) {
-                                                         reject(new Error('Falha ao parsear resposta Anthropic: ' + data));
-                                             }
-                                   });
-                           });
-
-                           req.on('error', reject);
-          req.setTimeout(30000, () => {
-                  req.destroy();
-                  reject(new Error('Timeout na chamada Anthropic'));
-          });
-          req.write(payload);
-          req.end();
+---
+${instrucaoEtapa}`,
+        messages: mensagensHistorico
+      })
     });
-}
-
-// POST /api/leads — recebe dados do n8n
-app.post('/api/leads', async (req, res) => {
-    try {
-          const {
-                  telefone, nome, nicho, status,
-                  ultima_mensagem, historico_resumo,
-                  orcamento, adiantamento, pago
-          } = req.body;
-
-      if (!telefone) return res.status(400).json({ error: 'telefone obrigatorio' });
-
-      const result = await pool.query(`
-            INSERT INTO leads (telefone, nome, nicho, status, ultima_mensagem, historico_resumo, orcamento, adiantamento, pago, ultimo_contato, atualizado_em)
-                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-                        ON CONFLICT (telefone) DO UPDATE SET
-                                nome = COALESCE(EXCLUDED.nome, leads.nome),
-                                        nicho = COALESCE(EXCLUDED.nicho, leads.nicho),
-                                                status = COALESCE(EXCLUDED.status, leads.status),
-                                                        ultima_mensagem = COALESCE(EXCLUDED.ultima_mensagem, leads.ultima_mensagem),
-                                                                historico_resumo = COALESCE(EXCLUDED.historico_resumo, leads.historico_resumo),
-                                                                        orcamento = CASE WHEN EXCLUDED.orcamento > 0 THEN EXCLUDED.orcamento ELSE leads.orcamento END,
-                                                                                adiantamento = CASE WHEN EXCLUDED.adiantamento > 0 THEN EXCLUDED.adiantamento ELSE leads.adiantamento END,
-                                                                                        pago = CASE WHEN EXCLUDED.pago > 0 THEN EXCLUDED.pago ELSE leads.pago END,
-                                                                                                ultimo_contato = NOW(),
-                                                                                                        atualizado_em = NOW(),
-                                                                                                                reaquecimento_count = 0
-                                                                                                                      RETURNING *
-                                                                                                                          `, [
-              telefone, nome || null, nicho || null, status || 'frio',
-              ultima_mensagem || null, historico_resumo || null,
-              orcamento || 0, adiantamento || 0, pago || 0
-            ]);
-
-      res.json({ success: true, lead: result.rows[0] });
-    } catch (err) {
-          console.error('Erro ao salvar lead:', err);
-          res.status(500).json({ error: err.message });
+    const claudeData = await claudeRes.json();
+    console.log('Claude status:', claudeRes.status, JSON.stringify(claudeData).substring(0, 200));
+    const resposta = claudeData.content?.[0]?.text;
+    if (resposta) {
+      if (etapa >= 4) {
+        await pool.query(`UPDATE contatos SET status='qualificado', atualizado_em=NOW() WHERE id=$1`, [contatoId]);
+        console.log('Lead qualificado - status atualizado no CRM');
+      } else if (etapa >= 2 && contato.rows[0].status === 'novo') {
+        await pool.query(`UPDATE contatos SET status='em_contato', atualizado_em=NOW() WHERE id=$1`, [contatoId]);
+      }
+      if (nicho) {
+        await pool.query(`UPDATE contatos SET empresa=COALESCE(NULLIF(empresa,''), $1), atualizado_em=NOW() WHERE id=$2`, [nicho, contatoId]);
+      }
+      await pool.query(`INSERT INTO conversas (contato_id, mensagem, direcao, canal) VALUES ($1,$2,'saida','whatsapp')`, [contatoId, resposta]);
+      console.log('Enviando WhatsApp para:', telefone, '| Token:', process.env.WHATSAPP_TOKEN?.substring(0, 15));
+      const waRes = await fetch(`https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: telefone,
+          type: 'text',
+          text: { body: resposta }
+        })
+      });
+      const waData = await waRes.json();
+      console.log('WhatsApp resposta:', JSON.stringify(waData).substring(0, 200));
     }
-});
-
-// GET /api/leads — listar todos os leads
-app.get('/api/leads', async (req, res) => {
-    try {
-          const { nicho, status } = req.query;
-          let query = 'SELECT * FROM leads WHERE 1=1';
-          const params = [];
-
-      if (nicho) { params.push(nicho); query += ` AND nicho = $${params.length}`; }
-          if (status) { params.push(status); query += ` AND status = $${params.length}`; }
-
-      query += ' ORDER BY atualizado_em DESC';
-
-      const result = await pool.query(query, params);
-          res.json(result.rows);
-    } catch (err) {
-          res.status(500).json({ error: err.message });
-    }
-});
-
-// PATCH /api/leads/:id — atualizar lead
-app.patch('/api/leads/:id', async (req, res) => {
-    try {
-          const { id } = req.params;
-          const fields = req.body;
-          const keys = Object.keys(fields);
-          if (keys.length === 0) return res.status(400).json({ error: 'Nenhum campo enviado' });
-
-      const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
-          const values = keys.map(k => fields[k]);
-          values.push(id);
-
-      const result = await pool.query(
-              `UPDATE leads SET ${setClause}, atualizado_em = NOW() WHERE id = $${values.length} RETURNING *`,
-              values
-            );
-          res.json({ success: true, lead: result.rows[0] });
-    } catch (err) {
-          res.status(500).json({ error: err.message });
-    }
-});
-
-// DELETE /api/leads/:id
-app.delete('/api/leads/:id', async (req, res) => {
-    try {
-          await pool.query('DELETE FROM leads WHERE id = $1', [req.params.id]);
-          res.json({ success: true });
-    } catch (err) {
-          res.status(500).json({ error: err.message });
-    }
-});
-
-// GET /api/metricas — faturamento
-app.get('/api/metricas', async (req, res) => {
-    try {
-          const result = await pool.query(`
-                SELECT
-                        COALESCE(SUM(orcamento), 0) as previsao_total,
-                                COALESCE(SUM(pago), 0) as faturamento_real,
-                                        COUNT(*) as total_leads,
-                                                COUNT(CASE WHEN status = 'quente' THEN 1 END) as quentes,
-                                                        COUNT(CASE WHEN status = 'frio' THEN 1 END) as frios,
-                                                                COUNT(CASE WHEN status = 'fechado' THEN 1 END) as fechados,
-                                                                        COUNT(CASE WHEN status = 'sem_interesse' THEN 1 END) as sem_interesse
-                                                                              FROM leads
-                                                                                  `);
-          res.json(result.rows[0]);
-    } catch (err) {
-          res.status(500).json({ error: err.message });
-    }
-});
-
-// GET /api/reaquecimento — leads que precisam de reaquecimento
-app.get('/api/reaquecimento', async (req, res) => {
-    try {
-          const result = await pool.query(`
-                SELECT * FROM leads
-                      WHERE status IN ('quente', 'frio')
-                            AND reaquecimento_count < 3
-                                  AND (
-                                          (reaquecimento_count = 0 AND ultimo_contato < NOW() - INTERVAL '1 hour')
-                                                  OR (reaquecimento_count = 1 AND ultimo_contato < NOW() - INTERVAL '12 hours')
-                                                          OR (reaquecimento_count = 2 AND ultimo_contato < NOW() - INTERVAL '20 hours')
-                                                                )
-                                                                      ORDER BY ultimo_contato ASC
-                                                                          `);
-          res.json(result.rows);
-    } catch (err) {
-          res.status(500).json({ error: err.message });
-    }
-});
-
-// POST /api/reaquecimento/:id/confirmar — marca reaquecimento como enviado
-app.post('/api/reaquecimento/:id/confirmar', async (req, res) => {
-    try {
-          const result = await pool.query(`
-                UPDATE leads SET
-                        reaquecimento_count = reaquecimento_count + 1,
-                                ultimo_contato = NOW(),
-                                        atualizado_em = NOW()
-                                              WHERE id = $1 RETURNING *
-                                                  `, [req.params.id]);
-          res.json({ success: true, lead: result.rows[0] });
-    } catch (err) {
-          res.status(500).json({ error: err.message });
-    }
-});
-
-// ============================================
-// WEBHOOK WHATSAPP
-// ============================================
-
-const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
-const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_ID;
-const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-
-// GET — verificação do webhook pelo Meta
-app.get('/webhook', (req, res) => {
-    const mode = req.query['hub.mode'];
-    const token = req.query['hub.verify_token'];
-    const challenge = req.query['hub.challenge'];
-
-          if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-                console.log('Webhook verificado!');
-                res.status(200).send(challenge);
-          } else {
-                res.sendStatus(403);
-          }
-});
-
-// Função para enviar mensagem pelo WhatsApp
-function sendWhatsAppMessage(phoneNumberId, token, to, text) {
-    return new Promise((resolve, reject) => {
-          const payload = JSON.stringify({
-                  messaging_product: 'whatsapp',
-                  to: to,
-                  type: 'text',
-                  text: { body: text }
-          });
-
-                           const options = {
-                                   hostname: 'graph.facebook.com',
-                                   path: `/v19.0/${phoneNumberId}/messages`,
-                                   method: 'POST',
-                                   headers: {
-                                             'Authorization': `Bearer ${token}`,
-                                             'Content-Type': 'application/json',
-                                             'content-length': Buffer.byteLength(payload)
-                                   }
-                           };
-
-                           const req = https.request(options, (res) => {
-                                   let data = '';
-                                   res.on('data', (chunk) => { data += chunk; });
-                                   res.on('end', () => {
-                                             try { resolve(JSON.parse(data)); }
-                                             catch (e) { resolve({ raw: data }); }
-                                   });
-                           });
-
-                           req.on('error', reject);
-          req.setTimeout(15000, () => {
-                  req.destroy();
-                  reject(new Error('Timeout ao enviar WhatsApp'));
-          });
-          req.write(payload);
-          req.end();
-    });
-}
-
-// POST — receber mensagens do WhatsApp
-app.post('/webhook', async (req, res) => {
     res.sendStatus(200);
-
-           try {
-                 const body = req.body;
-                 const entry = body?.entry?.[0];
-                 const change = entry?.changes?.[0];
-                 const message = change?.value?.messages?.[0];
-
-      if (!message || message.type !== 'text') return;
-
-      const from = message.from;
-                 const text = message.text.body;
-
-      console.log(`Mensagem de ${from}: ${text}`);
-
-      // Verificar se a ANTHROPIC_API_KEY está configurada
-      if (!ANTHROPIC_API_KEY) {
-              console.error('ERRO: ANTHROPIC_API_KEY não configurada!');
-              return;
-      }
-
-      // Chamar Claude AI usando https nativo (sem dependência de fetch)
-      let reply = 'Desculpe, não consegui processar sua mensagem.';
-                 try {
-                         const claudeData = await callAnthropic(ANTHROPIC_API_KEY, text);
-                         console.log('Resposta Anthropic status:', claudeData.type, '| erro:', claudeData.error);
-
-                   if (claudeData.content && claudeData.content[0] && claudeData.content[0].text) {
-                             reply = claudeData.content[0].text;
-                   } else if (claudeData.error) {
-                             console.error('Erro da API Anthropic:', JSON.stringify(claudeData.error));
-                             reply = 'Desculpe, estou com dificuldades técnicas no momento. Tente novamente em breve.';
-                   }
-                 } catch (claudeErr) {
-                         console.error('Erro ao chamar Anthropic:', claudeErr.message);
-                 }
-
-      console.log(`Resposta do Claude: ${reply}`);
-
-      // Enviar resposta pelo WhatsApp
-      if (WHATSAPP_TOKEN && PHONE_NUMBER_ID) {
-              try {
-                        const waResult = await sendWhatsAppMessage(PHONE_NUMBER_ID, WHATSAPP_TOKEN, from, reply);
-                        console.log(`Resposta enviada para ${from}:`, JSON.stringify(waResult).substring(0, 100));
-              } catch (waErr) {
-                        console.error('Erro ao enviar WhatsApp:', waErr.message);
-              }
-      } else {
-              console.warn('AVISO: WHATSAPP_TOKEN ou WHATSAPP_PHONE_ID não configurados. Resposta não enviada.');
-      }
-
-      // Salvar no CRM
-      await pool.query(`
-            INSERT INTO leads (telefone, ultima_mensagem, ultimo_contato, atualizado_em)
-                  VALUES ($1, $2, NOW(), NOW())
-                        ON CONFLICT (telefone) DO UPDATE SET
-                                ultima_mensagem = $2,
-                                        ultimo_contato = NOW(),
-                                                atualizado_em = NOW()
-                                                    `, [from, text]);
-
-           } catch (err) {
-                 console.error('Erro no webhook:', err.message, err.stack);
-           }
-});
-
-// Serve CRM frontend
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  } catch (err) {
+    console.error('Erro webhook:', err);
+    res.sendStatus(500);
+  }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, async () => {
-    await initDB();
-    console.log(`CRM rodando na porta ${PORT}`);
-    // Log de diagnóstico das variáveis de ambiente
-             console.log('ANTHROPIC_API_KEY configurada:', !!ANTHROPIC_API_KEY);
-    console.log('WHATSAPP_TOKEN configurado:', !!WHATSAPP_TOKEN);
-    console.log('WHATSAPP_PHONE_ID configurado:', !!PHONE_NUMBER_ID);
-    console.log('WHATSAPP_VERIFY_TOKEN configurado:', !!VERIFY_TOKEN);
+initDB().then(() => {
+  app.listen(PORT, () => console.log(`CRM rodando na porta ${PORT}`));
 });
-// v3
