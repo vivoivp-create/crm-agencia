@@ -53,6 +53,35 @@ async function initDB() {
   console.log('Banco de dados inicializado.');
 }
 
+// ─── PORTFOLIO ───────────────────────────────────────────────────────────────
+
+const PORTFOLIO = {
+  hamburguer: {
+    metodo: 'Método Burger Viral',
+    videos: [
+      'https://www.youtube.com/shorts/qv-QmvltN5k',
+      'https://www.youtube.com/shorts/NuV23DgBTnk',
+      'https://www.youtube.com/shorts/Z58kSeUO8k4'
+    ],
+    planos: `🥉 Básico — R$69,90
+🥈 Standard — R$197,90
+🥇 Max Plus — R$297,90`
+  },
+  japones: {
+    metodo: 'Método Fome Visual',
+    videos: [
+      'https://www.youtube.com/shorts/36uq3MaaHic',
+      'https://www.youtube.com/shorts/jrbzf5kYPuY',
+      'https://www.youtube.com/shorts/n78ISZ6acwk'
+    ],
+    planos: `🥉 Básico — R$89,90
+🥈 Standard — R$197,90
+🥇 Max Plus — R$297,90`
+  }
+};
+
+// ─── APIs CRM ───────────────────────────────────────────────────────────────
+
 app.get('/api/contatos', async (req, res) => {
   try {
     const { status, busca } = req.query;
@@ -163,9 +192,10 @@ app.get('/api/dashboard', async (req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
+// ─── WEBHOOK ────────────────────────────────────────────────────────────────
+
 app.get('/webhook', (req, res) => {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'agencia123';
-  console.log('GET webhook - token:', req.query['hub.verify_token']);
   if (req.query['hub.verify_token'] === VERIFY_TOKEN) {
     res.send(req.query['hub.challenge']);
   } else {
@@ -177,9 +207,9 @@ function corrigirTelefone(telefone) {
   if (telefone.startsWith('55') && telefone.length === 12) {
     const ddd = telefone.slice(2, 4);
     const numero = telefone.slice(4);
-    const telefoneCorrigido = '55' + ddd + '9' + numero;
-    console.log(`Numero corrigido: ${telefone} -> ${telefoneCorrigido}`);
-    return telefoneCorrigido;
+    const corrigido = '55' + ddd + '9' + numero;
+    console.log(`Numero corrigido: ${telefone} -> ${corrigido}`);
+    return corrigido;
   }
   return telefone;
 }
@@ -195,13 +225,18 @@ function detectarEtapa(historico) {
   const textoCompleto = historico.map(m => m.content).join(' ');
   const nicho = detectarNicho(textoCompleto);
   const videoEnviado = textoCompleto.includes('youtube.com/shorts');
-  const planosApresentados = textoCompleto.toLowerCase().includes('basico') || textoCompleto.toLowerCase().includes('básico') || textoCompleto.toLowerCase().includes('standard') || textoCompleto.toLowerCase().includes('max plus');
+  const planosApresentados = textoCompleto.toLowerCase().includes('básico') || textoCompleto.toLowerCase().includes('basico') || textoCompleto.toLowerCase().includes('standard') || textoCompleto.toLowerCase().includes('max plus');
   const leadFechado = textoCompleto.toLowerCase().includes('fabiano') && (textoCompleto.toLowerCase().includes('entrar em contato') || textoCompleto.toLowerCase().includes('fechar'));
   if (leadFechado) return { etapa: 5, nicho };
   if (planosApresentados) return { etapa: 4, nicho };
   if (videoEnviado) return { etapa: 3, nicho };
   if (nicho) return { etapa: 2, nicho };
   return { etapa: 1, nicho: null };
+}
+
+function ehMensagemDeCampanha(texto) {
+  const t = texto.toLowerCase().trim();
+  return t.includes('tenho interesse') && t.includes('mais informa');
 }
 
 app.post('/webhook', async (req, res) => {
@@ -211,54 +246,88 @@ app.post('/webhook', async (req, res) => {
     const change = entry?.changes?.[0];
     const message = change?.value?.messages?.[0];
     const contact = change?.value?.contacts?.[0];
+
     if (!message || message.type !== 'text') {
       console.log('Ignorando - nao e texto');
       return res.sendStatus(200);
     }
+
     const telefoneOriginal = message.from;
     const telefone = corrigirTelefone(telefoneOriginal);
     const texto = message.text.body;
     const nomeWhatsapp = contact?.profile?.name || 'Desconhecido';
+
     console.log('Processando:', telefone, nomeWhatsapp, texto);
+
     let contato = await pool.query('SELECT * FROM contatos WHERE telefone=$1', [telefone]);
-    if (contato.rows.length === 0) {
-      contato = await pool.query('SELECT * FROM contatos WHERE telefone=$1', [telefoneOriginal]);
-    }
+    if (contato.rows.length === 0) contato = await pool.query('SELECT * FROM contatos WHERE telefone=$1', [telefoneOriginal]);
     if (contato.rows.length === 0) {
       contato = await pool.query(
         `INSERT INTO contatos (nome, telefone, origem, status) VALUES ($1,$2,'whatsapp','novo') RETURNING *`,
         [nomeWhatsapp, telefone]
       );
     }
+
     const contatoId = contato.rows[0].id;
+
     const historico = await pool.query(
       `SELECT mensagem, direcao FROM conversas WHERE contato_id=$1 ORDER BY criado_em ASC LIMIT 30`,
       [contatoId]
     );
+
     const mensagensHistorico = historico.rows.map(row => ({
       role: row.direcao === 'entrada' ? 'user' : 'assistant',
       content: row.mensagem
     }));
+
     const { etapa, nicho } = detectarEtapa(mensagensHistorico);
-    console.log(`Etapa detectada: ${etapa} | Nicho: ${nicho}`);
+    const veioDeCampanha = ehMensagemDeCampanha(texto);
+
+    console.log(`Etapa: ${etapa} | Nicho: ${nicho} | Campanha: ${veioDeCampanha}`);
+
     await pool.query(
       `INSERT INTO conversas (contato_id, mensagem, direcao, canal, lida) VALUES ($1,$2,'entrada','whatsapp',false)`,
       [contatoId, texto]
     );
+
     mensagensHistorico.push({ role: 'user', content: texto });
+
+    // Montar instrução de etapa
     let instrucaoEtapa = '';
-    if (etapa === 1) {
+    if (veioDeCampanha && etapa === 1) {
+      instrucaoEtapa = 'ETAPA ATUAL: 1 (LEAD DE CAMPANHA) - O cliente veio de um anúncio e já tem interesse confirmado. Seja direto e animado. Pergunte apenas: qual é o seu negócio? É hambúrguer, japonês ou outro? Não faça apresentação longa.';
+    } else if (etapa === 1) {
       instrucaoEtapa = 'ETAPA ATUAL: 1 - Pergunte qual tipo de negócio o cliente tem. Seja breve e simpático. Não peça nome ainda.';
     } else if (etapa === 2) {
-      instrucaoEtapa = `ETAPA ATUAL: 2 - Nicho já identificado: ${nicho}. Envie AGORA o link do portfólio correspondente e gere desejo. NÃO pergunte o nicho de novo.`;
+      const p = PORTFOLIO[nicho];
+      const videos = p ? p.videos.join('\n') : '';
+      instrucaoEtapa = `ETAPA ATUAL: 2 - Nicho já identificado: ${nicho}. Envie AGORA os links dos vídeos do portfólio e gere desejo. Use exatamente esses links:\n${videos}\nPergunte: fez sentido? O que achou? NÃO pergunte o nicho de novo.`;
     } else if (etapa === 3) {
-      instrucaoEtapa = `ETAPA ATUAL: 3 - Vídeo já enviado. Gere mais desejo e apresente os planos do método ${nicho === 'hamburguer' ? 'Burger Viral' : 'Fome Visual'}. NÃO envie o vídeo de novo.`;
+      const p = PORTFOLIO[nicho] || PORTFOLIO['hamburguer'];
+      instrucaoEtapa = `ETAPA ATUAL: 3 - Vídeos já enviados. Gere mais desejo e apresente os planos do ${p.metodo}:\n${p.planos}\nLembre: você só paga após ver o material pronto 🔥. NÃO envie os vídeos de novo.`;
     } else if (etapa === 4) {
-      instrucaoEtapa = 'ETAPA ATUAL: 4 - Planos já apresentados. Colete: nome completo e nome do negócio. Depois passe pro Fabiano fechar.';
+      instrucaoEtapa = 'ETAPA ATUAL: 4 - Planos já apresentados. Colete: nome completo e nome do negócio. Depois diga que vai passar pro Fabiano fechar.';
     } else {
-      instrucaoEtapa = 'ETAPA ATUAL: 5 - Lead qualificado. Mantenha conversa amigável.';
+      instrucaoEtapa = 'ETAPA ATUAL: 5 - Lead qualificado. Mantenha conversa amigável. O Fabiano já vai entrar em contato.';
     }
+
+    // Montar portfólio para o system prompt
+    const portfolioTexto = `HAMBÚRGUER 🍔
+${PORTFOLIO.hamburguer.metodo}
+Vídeos de exemplo:
+${PORTFOLIO.hamburguer.videos.join('\n')}
+Planos:
+${PORTFOLIO.hamburguer.planos}
+
+JAPONÊS 🍣
+${PORTFOLIO.japones.metodo}
+Vídeos de exemplo:
+${PORTFOLIO.japones.videos.join('\n')}
+Planos:
+${PORTFOLIO.japones.planos}`;
+
     console.log('Chamando Claude...');
+
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -276,10 +345,11 @@ IDENTIDADE:
 - Nunca pareça robô
 - Use emojis com naturalidade
 - Regra de ouro: vender primeiro, depois coletar dados
+- NUNCA use markdown como # ou * nas mensagens — escreva texto puro
 
 FLUXO OBRIGATÓRIO (siga EXATAMENTE essa ordem, nunca pule nem repita etapa):
 1. Descobrir o nicho do cliente
-2. Enviar link do portfólio assim que identificar o nicho
+2. Enviar os 3 links de vídeo do portfólio assim que identificar o nicho
 3. Gerar desejo — perguntar: fez sentido? O que achou?
 4. Apresentar os planos do método correto
 5. Capturar nome completo e nome do negócio
@@ -290,27 +360,13 @@ REGRAS CRÍTICAS:
 - NUNCA repita perguntas já respondidas no histórico
 - NUNCA ignore o que o cliente já disse
 - NUNCA volte a perguntar o nicho se já foi identificado
+- NUNCA use # ou * ou markdown nas respostas
 - Leia TODO o histórico antes de responder
 
 PORTFÓLIO:
+${portfolioTexto}
 
-HAMBÚRGUER 🍔
-Método Burger Viral
-Link: https://www.youtube.com/shorts/qv-QmvltN5k
-Planos:
-🥉 Básico — R$69,90
-🥈 Standard — R$197,90
-🥇 Max Plus — R$297,90
-
-JAPONÊS 🍣
-Método Fome Visual
-Link: https://www.youtube.com/shorts/36uq3MaaHic
-Planos:
-🥉 Básico — R$89,90
-🥈 Standard — R$197,90
-🥇 Max Plus — R$297,90
-
-SEMPRE DIZER: Você só paga após ver o material pronto 🔥
+SEMPRE DIZER ao apresentar planos: Você só paga após ver o material pronto 🔥
 
 CAPTURA DE LEAD:
 Após apresentar planos, colete nome completo e nome do negócio.
@@ -324,21 +380,26 @@ ${instrucaoEtapa}`,
         messages: mensagensHistorico
       })
     });
+
     const claudeData = await claudeRes.json();
     console.log('Claude status:', claudeRes.status, JSON.stringify(claudeData).substring(0, 200));
+
     const resposta = claudeData.content?.[0]?.text;
+
     if (resposta) {
       if (etapa >= 4) {
         await pool.query(`UPDATE contatos SET status='qualificado', atualizado_em=NOW() WHERE id=$1`, [contatoId]);
-        console.log('Lead qualificado - status atualizado no CRM');
+        console.log('Lead qualificado');
       } else if (etapa >= 2 && contato.rows[0].status === 'novo') {
         await pool.query(`UPDATE contatos SET status='em_contato', atualizado_em=NOW() WHERE id=$1`, [contatoId]);
       }
       if (nicho) {
         await pool.query(`UPDATE contatos SET empresa=COALESCE(NULLIF(empresa,''), $1), atualizado_em=NOW() WHERE id=$2`, [nicho, contatoId]);
       }
+
       await pool.query(`INSERT INTO conversas (contato_id, mensagem, direcao, canal) VALUES ($1,$2,'saida','whatsapp')`, [contatoId, resposta]);
-      console.log('Enviando WhatsApp para:', telefone, '| Token:', process.env.WHATSAPP_TOKEN?.substring(0, 15));
+
+      console.log('Enviando WhatsApp para:', telefone);
       const waRes = await fetch(`https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
         method: 'POST',
         headers: {
@@ -352,9 +413,11 @@ ${instrucaoEtapa}`,
           text: { body: resposta }
         })
       });
+
       const waData = await waRes.json();
       console.log('WhatsApp resposta:', JSON.stringify(waData).substring(0, 200));
     }
+
     res.sendStatus(200);
   } catch (err) {
     console.error('Erro webhook:', err);
