@@ -183,7 +183,98 @@ app.post('/api/reaquecimento/:id/confirmar', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// ============================================
+// WEBHOOK WHATSAPP — adicionar ao server.js
+// ============================================
 
+const WHATSAPP_TOKEN = 'EAAkmsukJoyoBRf6ZCW4w4WSiY3JsmwnzjmNXj4vEfE5Krfie2zWScrH0iY49xUamwyOhJf4FXSazmhpg6ZBpPy78PrgZBYeglYqcdN2xfJ301yZBDiNVemX2ZBINHRI06fpSbYmjncqJAY5Bw0CssyHaRAju81DcVZBE5OGV3sAlBzapbFathGE51d5YsIGyZCDdvrVIT3lZCfZBrrg1Ntlcby64HZCEJfiO0KO9ZBezUHoBJ9ZCQkWo4RJsmUPU6EZBR5zkryKkJ6cmA2yjwHMRfaDMpSQZDZD';
+const PHONE_NUMBER_ID = '1012871768586379';
+const VERIFY_TOKEN = 'vigore2024';
+const ANTHROPIC_API_KEY = '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';
+
+// GET — verificação do webhook pelo Meta
+app.get('/webhook', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    console.log('Webhook verificado!');
+    res.status(200).send(challenge);
+  } else {
+    res.sendStatus(403);
+  }
+});
+
+// POST — receber mensagens do WhatsApp
+app.post('/webhook', async (req, res) => {
+  res.sendStatus(200); // responde imediatamente ao Meta
+
+  try {
+    const body = req.body;
+    const entry = body?.entry?.[0];
+    const change = entry?.changes?.[0];
+    const message = change?.value?.messages?.[0];
+
+    if (!message || message.type !== 'text') return;
+
+    const from = message.from;
+    const text = message.text.body;
+
+    console.log(`Mensagem de ${from}: ${text}`);
+
+    // Chamar Claude AI
+    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        system: 'Você é um assistente virtual da Agência CRM. Responda de forma simpática, direta e profissional em português.',
+        messages: [{ role: 'user', content: text }]
+      })
+    });
+
+    const claudeData = await claudeRes.json();
+    const reply = claudeData.content?.[0]?.text || 'Desculpe, não consegui processar sua mensagem.';
+
+    console.log(`Resposta do Claude: ${reply}`);
+
+    // Enviar resposta pelo WhatsApp
+    await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: from,
+        type: 'text',
+        text: { body: reply }
+      })
+    });
+
+    console.log(`Resposta enviada para ${from}`);
+
+    // Salvar no CRM
+    await pool.query(`
+      INSERT INTO leads (telefone, ultima_mensagem, ultimo_contato, atualizado_em)
+      VALUES ($1, $2, NOW(), NOW())
+      ON CONFLICT (telefone) DO UPDATE SET
+        ultima_mensagem = $2,
+        ultimo_contato = NOW(),
+        atualizado_em = NOW()
+    `, [from, text]);
+
+  } catch (err) {
+    console.error('Erro no webhook:', err);
+  }
+});
 // Serve CRM frontend
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
