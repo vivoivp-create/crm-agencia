@@ -183,14 +183,15 @@ app.post('/api/reaquecimento/:id/confirmar', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 // ============================================
-// WEBHOOK WHATSAPP — adicionar ao server.js
+// WEBHOOK WHATSAPP
 // ============================================
 
-const WHATSAPP_TOKEN = 'EAAkmsukJoyoBRf6ZCW4w4WSiY3JsmwnzjmNXj4vEfE5Krfie2zWScrH0iY49xUamwyOhJf4FXSazmhpg6ZBpPy78PrgZBYeglYqcdN2xfJ301yZBDiNVemX2ZBINHRI06fpSbYmjncqJAY5Bw0CssyHaRAju81DcVZBE5OGV3sAlBzapbFathGE51d5YsIGyZCDdvrVIT3lZCfZBrrg1Ntlcby64HZCEJfiO0KO9ZBezUHoBJ9ZCQkWo4RJsmUPU6EZBR5zkryKkJ6cmA2yjwHMRfaDMpSQZDZD';
-const PHONE_NUMBER_ID = '1012871768586379';
-const VERIFY_TOKEN = 'vigore2024';
-const ANTHROPIC_API_KEY = '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';
+const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
+const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_ID;
+const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
 // GET — verificação do webhook pelo Meta
 app.get('/webhook', (req, res) => {
@@ -208,7 +209,7 @@ app.get('/webhook', (req, res) => {
 
 // POST — receber mensagens do WhatsApp
 app.post('/webhook', async (req, res) => {
-  res.sendStatus(200); // responde imediatamente ao Meta
+  res.sendStatus(200);
 
   try {
     const body = req.body;
@@ -275,6 +276,7 @@ app.post('/webhook', async (req, res) => {
     console.error('Erro no webhook:', err);
   }
 });
+
 // Serve CRM frontend
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
