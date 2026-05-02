@@ -8,8 +8,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:flex;height:100vh;overflow:hidden}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#1a1a1a}::-webkit-scrollbar-thumb{background:#2ecc71;border-radius:3px}
-/* SIDEBAR */
-.sidebar{width:220px;background:#111;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;padding:0;flex-shrink:0}
+.sidebar{width:220px;background:#111;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;flex-shrink:0}
 .sidebar-logo{padding:20px 16px;border-bottom:1px solid #1e1e1e}
 .sidebar-logo h2{font-size:14px;font-weight:700;color:#2ecc71;letter-spacing:1px}
 .sidebar-logo p{font-size:11px;color:#555;margin-top:2px}
@@ -18,7 +17,6 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
 .nav-item:hover{background:#1a1a1a;color:#e0e0e0}
 .nav-item.active{background:#1a2e1f;color:#2ecc71;border-left-color:#2ecc71}
 .nav-item svg{width:16px;height:16px;flex-shrink:0}
-/* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .topbar{background:#111;border-bottom:1px solid #1e1e1e;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
 .topbar h1{font-size:16px;font-weight:600;color:#fff}
@@ -28,100 +26,84 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
 .btn-primary:hover{background:#27ae60}
 .btn-ghost{background:transparent;color:#888;border:1px solid #2a2a2a}
 .btn-ghost:hover{background:#1a1a1a;color:#e0e0e0}
-.btn-sm{padding:5px 12px;font-size:12px}
 .btn-danger{background:#c0392b;color:#fff}
 .btn-danger:hover{background:#a93226}
 .content{flex:1;overflow-y:auto;padding:24px}
-/* DASHBOARD */
-.cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+.content.no-pad{padding:0}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:16px;margin-bottom:24px}
 .card{background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:18px}
 .card-label{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
-.card-value{font-size:24px;font-weight:700;color:#fff}
-.card-value.green{color:#2ecc71}
-.card-value.red{color:#e74c3c}
-.card-value.yellow{color:#f39c12}
-.card-value.blue{color:#3498db}
+.card-value{font-size:22px;font-weight:700;color:#fff}
+.card-value.green{color:#2ecc71}.card-value.red{color:#e74c3c}.card-value.yellow{color:#f39c12}
 .card-sub{font-size:11px;color:#444;margin-top:4px}
 .dash-section{background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:20px;margin-bottom:20px}
-.dash-section h3{font-size:13px;font-weight:600;color:#2ecc71;margin-bottom:16px;text-transform:uppercase;letter-spacing:.8px}
-.gastos-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dash-section h3{font-size:12px;font-weight:600;color:#2ecc71;margin-bottom:16px;text-transform:uppercase;letter-spacing:.8px}
+.funil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px}
+.funil-item{background:#0d0d0d;border:1px solid #1e1e1e;border-radius:8px;padding:14px;text-align:center}
+.funil-item .count{font-size:26px;font-weight:700;color:#2ecc71}
+.funil-item .label{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-group label{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.5px}
 .form-group input,.form-group select,.form-group textarea{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:6px;padding:8px 12px;color:#e0e0e0;font-size:13px;outline:none;transition:.2s}
 .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#2ecc71}
 .form-group textarea{resize:vertical;min-height:80px}
-/* LEADS */
+.gastos-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .leads-toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-.search-input{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:8px 14px;color:#e0e0e0;font-size:13px;outline:none;flex:1;min-width:200px}
+.search-input{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:8px 14px;color:#e0e0e0;font-size:13px;outline:none;flex:1;min-width:180px}
 .search-input:focus{border-color:#2ecc71}
 .filter-select{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:8px 12px;color:#e0e0e0;font-size:13px;outline:none;cursor:pointer}
-.filter-select:focus{border-color:#2ecc71}
 .leads-list{display:flex;flex-direction:column;gap:8px}
 .lead-card{background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:.2s}
 .lead-card:hover{border-color:#2ecc71;background:#131313}
-.lead-avatar{width:40px;height:40px;border-radius:50%;background:#1a2e1f;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#2ecc71;flex-shrink:0}
+.lead-avatar{width:40px;height:40px;border-radius:50%;background:#1a2e1f;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#2ecc71;flex-shrink:0}
 .lead-info{flex:1;min-width:0}
 .lead-name{font-size:14px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lead-phone{font-size:12px;color:#555;margin-top:2px}
-.lead-meta{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.lead-meta{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
 .badge-frio{background:#1a2535;color:#3498db}
 .badge-quente{background:#2e1a0e;color:#e67e22}
 .badge-qualificado{background:#1a2e1f;color:#2ecc71}
-.badge-fechado{background:#1a2e1f;color:#2ecc71;border:1px solid #2ecc71}
+.badge-fechado{background:#1a3320;color:#2ecc71;border:1px solid #2ecc71}
 .badge-perdido{background:#2e1a1a;color:#e74c3c}
 .badge-novo{background:#1e1e1e;color:#888}
 .badge-em_contato{background:#1a2535;color:#3498db}
 .lead-value{font-size:13px;font-weight:600;color:#2ecc71}
-.lead-paid{width:18px;height:18px;border-radius:4px;border:2px solid #2ecc71;display:flex;align-items:center;justify-content:center}
-.lead-paid.checked{background:#2ecc71}
-.wa-btn{width:32px;height:32px;border-radius:8px;background:#1a3320;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;text-decoration:none}
+.pago-check{width:20px;height:20px;border-radius:5px;border:2px solid #333;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pago-check.ok{background:#2ecc71;border-color:#2ecc71}
+.wa-btn{width:32px;height:32px;border-radius:8px;background:#1a3320;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;text-decoration:none;flex-shrink:0}
 .wa-btn:hover{background:#2ecc71}
-.wa-btn:hover svg path{fill:#000}
-/* MODAL */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal{background:#111;border:1px solid #2a2a2a;border-radius:12px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;padding:28px}
 .modal h2{font-size:16px;font-weight:700;color:#fff;margin-bottom:20px}
 .modal-form{display:flex;flex-direction:column;gap:14px}
 .modal-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
-.checkbox-row{display:flex;align-items:center;gap:10px;padding:8px 0}
+.checkbox-row{display:flex;align-items:center;gap:10px;padding:6px 0}
 .checkbox-row input[type=checkbox]{width:18px;height:18px;accent-color:#2ecc71;cursor:pointer}
 .checkbox-row label{font-size:13px;color:#aaa;cursor:pointer}
-/* CHAT */
-.chat-container{display:flex;height:100%;gap:0}
-.chat-list{width:300px;border-right:1px solid #1e1e1e;overflow-y:auto;flex-shrink:0}
-.chat-list-item{padding:14px 16px;border-bottom:1px solid #1a1a1a;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:12px}
-.chat-list-item:hover{background:#151515}
-.chat-list-item.active{background:#1a2e1f}
-.chat-list-avatar{width:38px;height:38px;border-radius:50%;background:#1a2e1f;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#2ecc71;flex-shrink:0}
-.chat-list-info{flex:1;min-width:0}
-.chat-list-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chat-list-preview{font-size:11px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-.chat-window{flex:1;display:flex;flex-direction:column;background:#0d0d0d}
-.chat-header{background:#111;border-bottom:1px solid #1e1e1e;padding:14px 18px;display:flex;align-items:center;gap:12px}
-.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:10px}
-.chat-empty{flex:1;display:flex;align-items:center;justify-content:center;color:#333;font-size:14px}
-.msg{max-width:72%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5;word-break:break-word}
-.msg-in{background:#1a1a1a;color:#ddd;align-self:flex-start;border-radius:4px 12px 12px 12px}
+.chat-layout{display:flex;height:100%;overflow:hidden}
+.chat-list-panel{width:280px;border-right:1px solid #1e1e1e;overflow-y:auto;flex-shrink:0}
+.chat-item{padding:12px 14px;border-bottom:1px solid #1a1a1a;cursor:pointer;display:flex;align-items:center;gap:10px;transition:.2s}
+.chat-item:hover{background:#151515}
+.chat-item.active{background:#1a2e1f}
+.chat-avatar{width:36px;height:36px;border-radius:50%;background:#1a2e1f;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#2ecc71;flex-shrink:0}
+.chat-item-info{flex:1;min-width:0}
+.chat-item-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-item-prev{font-size:11px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.chat-header{background:#111;border-bottom:1px solid #1e1e1e;padding:12px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:70%;padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.5;word-break:break-word}
+.msg-in{background:#1e1e1e;color:#ddd;align-self:flex-start;border-radius:4px 12px 12px 12px}
 .msg-out{background:#1a3320;color:#e0e0e0;align-self:flex-end;border-radius:12px 4px 12px 12px}
-.msg-time{font-size:10px;color:#444;margin-top:4px;text-align:right}
-.chat-input-area{background:#111;border-top:1px solid #1e1e1e;padding:14px 16px;display:flex;gap:10px;align-items:flex-end}
-.chat-input{flex:1;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;padding:10px 14px;color:#e0e0e0;font-size:13px;outline:none;resize:none;max-height:120px;min-height:40px}
-.chat-input:focus{border-color:#2ecc71}
-.chat-send-btn{background:#2ecc71;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;color:#000;font-weight:700;font-size:13px;transition:.2s;flex-shrink:0}
-.chat-send-btn:hover{background:#27ae60}
-.no-chat{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:#333}
-.no-chat svg{width:48px;height:48px;opacity:.3}
-/* FUNIL */
-.funil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
-.funil-item{background:#0d0d0d;border:1px solid #1e1e1e;border-radius:8px;padding:14px;text-align:center}
-.funil-item .count{font-size:28px;font-weight:700;color:#2ecc71}
-.funil-item .label{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
-/* TABS */
-.page{display:none}.page.active{display:flex;flex-direction:column;height:100%}
-.page-scroll{display:none}.page-scroll.active{display:block}
+.msg-time{font-size:10px;color:#555;margin-top:3px}
+.chat-no-sel{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#333;font-size:13px}
+.page{display:none}
+.page.active{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.page-scroll{display:none}
+.page-scroll.active{display:block}
 </style>
 </head>
 <body>
@@ -133,20 +115,16 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
   </div>
   <nav>
     <div class="nav-item active" onclick="nav('dashboard')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      Dashboard
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
     </div>
     <div class="nav-item" onclick="nav('leads')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Leads
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Leads
     </div>
     <div class="nav-item" onclick="nav('chat')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Chat
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chat
     </div>
     <div class="nav-item" onclick="nav('financeiro')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      Financeiro
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Financeiro
     </div>
   </nav>
 </div>
@@ -156,16 +134,16 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
     <h1 id="page-title">Dashboard</h1>
     <div class="topbar-actions" id="topbar-actions"></div>
   </div>
-  <div class="content" id="content">
 
-    <!-- DASHBOARD -->
-    <div id="page-dashboard" class="page-scroll active">
-      <div class="cards-grid" id="dash-cards">
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" class="page active">
+    <div class="content">
+      <div class="cards-grid">
         <div class="card"><div class="card-label">Leads Totais</div><div class="card-value" id="d-leads">—</div></div>
-        <div class="card"><div class="card-label">Clientes Fechados</div><div class="card-value green" id="d-fechados">—</div></div>
+        <div class="card"><div class="card-label">Fechados</div><div class="card-value green" id="d-fechados">—</div></div>
         <div class="card"><div class="card-label">Faturamento Real</div><div class="card-value green" id="d-fat">—</div></div>
         <div class="card"><div class="card-label">Previsão Entrada</div><div class="card-value yellow" id="d-prev">—</div></div>
-        <div class="card"><div class="card-label">Gastos Totais</div><div class="card-value red" id="d-gastos">—</div></div>
+        <div class="card"><div class="card-label">Total Gastos</div><div class="card-value red" id="d-gastos">—</div></div>
         <div class="card"><div class="card-label">Resultado Final</div><div class="card-value" id="d-result">—</div></div>
       </div>
       <div class="dash-section">
@@ -173,13 +151,15 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
         <div class="funil-grid" id="funil-grid"></div>
       </div>
     </div>
+  </div>
 
-    <!-- LEADS -->
-    <div id="page-leads" class="page-scroll">
+  <!-- LEADS -->
+  <div id="page-leads" class="page">
+    <div class="content">
       <div class="leads-toolbar">
-        <input class="search-input" type="text" placeholder="Buscar lead..." id="lead-search" oninput="filtrarLeads()">
+        <input class="search-input" type="text" placeholder="Buscar nome, telefone..." id="lead-search" oninput="filtrarLeads()">
         <select class="filter-select" id="lead-filter" onchange="filtrarLeads()">
-          <option value="">Todos os status</option>
+          <option value="">Todos</option>
           <option value="novo">Novo</option>
           <option value="frio">Frio</option>
           <option value="em_contato">Em Contato</option>
@@ -191,30 +171,34 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
       </div>
       <div class="leads-list" id="leads-list"></div>
     </div>
+  </div>
 
-    <!-- CHAT -->
-    <div id="page-chat" class="page" style="height:calc(100vh - 57px)">
-      <div class="chat-container" style="flex:1;overflow:hidden">
-        <div class="chat-list" id="chat-list"></div>
-        <div id="chat-window" style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:#333">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;opacity:.3"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span>Selecione um lead para ver a conversa</span>
+  <!-- CHAT -->
+  <div id="page-chat" class="page">
+    <div class="chat-layout">
+      <div class="chat-list-panel" id="chat-list-panel"></div>
+      <div class="chat-main" id="chat-main">
+        <div class="chat-no-sel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:44px;height:44px;opacity:.25"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Selecione um lead para ver a conversa
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- FINANCEIRO -->
-    <div id="page-financeiro" class="page-scroll">
+  <!-- FINANCEIRO -->
+  <div id="page-financeiro" class="page">
+    <div class="content">
       <div class="dash-section">
         <h3>Gastos Fixos Mensais</h3>
         <div class="gastos-form">
           <div class="form-group">
             <label>Meta ADS (R$)</label>
-            <input type="number" id="gasto-meta" placeholder="0,00" oninput="salvarGastos()">
+            <input type="number" id="gasto-meta" placeholder="0.00" step="0.01" oninput="salvarGastos()">
           </div>
           <div class="form-group">
             <label>Mão de Obra (R$)</label>
-            <input type="number" id="gasto-mdo" placeholder="0,00" oninput="salvarGastos()">
+            <input type="number" id="gasto-mdo" placeholder="0.00" step="0.01" oninput="salvarGastos()">
           </div>
         </div>
       </div>
@@ -230,7 +214,6 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
         </div>
       </div>
     </div>
-
   </div>
 </div>
 
@@ -241,7 +224,7 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
     <div class="modal-form">
       <div class="modal-row">
         <div class="form-group"><label>Nome</label><input id="f-nome" type="text" placeholder="Nome completo"></div>
-        <div class="form-group"><label>Telefone</label><input id="f-tel" type="text" placeholder="+55..."></div>
+        <div class="form-group"><label>Telefone (com DDI)</label><input id="f-tel" type="text" placeholder="5543999999999"></div>
       </div>
       <div class="modal-row">
         <div class="form-group"><label>Empresa / Nicho</label><input id="f-empresa" type="text" placeholder="Ex: Hamburgueria..."></div>
@@ -260,14 +243,15 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
             <option value="perdido">Perdido</option>
           </select>
         </div>
-        <div class="form-group"><label>Valor (R$)</label><input id="f-valor" type="number" placeholder="0,00" step="0.01"></div>
+        <div class="form-group"><label>Valor do Contrato (R$)</label><input id="f-valor" type="number" placeholder="0.00" step="0.01"></div>
       </div>
       <div class="checkbox-row">
         <input type="checkbox" id="f-pago">
-        <label for="f-pago">Pagamento confirmado (conta no faturamento real)</label>
+        <label for="f-pago">Pagamento confirmado — entra no Faturamento Real</label>
       </div>
-      <div class="form-group"><label>Notas</label><textarea id="f-notas" placeholder="Observações..."></textarea></div>
+      <div class="form-group"><label>Notas</label><textarea id="f-notas" placeholder="Observações sobre o lead..."></textarea></div>
       <div class="modal-actions">
+        <button class="btn btn-danger" id="btn-deletar" style="display:none;margin-right:auto" onclick="deletarLead()">Excluir</button>
         <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
         <button class="btn btn-primary" onclick="salvarLead()">Salvar</button>
       </div>
@@ -277,135 +261,144 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
 
 <script>
 let leads = [];
-let contatoAtivo = null;
 let editandoId = null;
-const gastos = { meta: 0, mdo: 0 };
+let chatAtivoId = null;
 
-function fmt(v){ return 'R$ '+(parseFloat(v)||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.') }
-function initials(n){ return (n||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase() }
-function timeAgo(d){
-  const s=Math.floor((Date.now()-new Date(d))/1000);
-  if(s<60)return 'agora';if(s<3600)return Math.floor(s/60)+'min';
-  if(s<86400)return Math.floor(s/3600)+'h';return Math.floor(s/86400)+'d';
+const fmt = v => 'R$ ' + (parseFloat(v)||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+const ini = n => (n||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+const timeAgo = d => {
+  const s = Math.floor((Date.now()-new Date(d))/1000);
+  if(s<60) return 'agora'; if(s<3600) return Math.floor(s/60)+'min';
+  if(s<86400) return Math.floor(s/3600)+'h'; return Math.floor(s/86400)+'d';
+};
+const fmtTime = d => new Date(d).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+
+function getGastos(){
+  return { meta: parseFloat(localStorage.getItem('gasto_meta'))||0, mdo: parseFloat(localStorage.getItem('gasto_mdo'))||0 };
 }
-function formatTime(d){ return new Date(d).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) }
+function salvarGastos(){
+  localStorage.setItem('gasto_meta', document.getElementById('gasto-meta').value||0);
+  localStorage.setItem('gasto_mdo', document.getElementById('gasto-mdo').value||0);
+  renderFinanceiro(); renderDash();
+}
+function carregarGastos(){
+  const g = getGastos();
+  document.getElementById('gasto-meta').value = g.meta||'';
+  document.getElementById('gasto-mdo').value = g.mdo||'';
+}
 
 async function loadLeads(){
-  try{
-    const r=await fetch('/api/contatos');
-    leads=await r.json();
-    renderLeads();
-    renderChatList();
-    renderDash();
-    renderFinanceiro();
-  }catch(e){console.error(e)}
+  try {
+    const r = await fetch('/api/contatos');
+    leads = await r.json();
+    renderLeads(); renderChatList(); renderDash(); renderFinanceiro();
+  } catch(e){ console.error(e); }
 }
 
 function nav(page){
   document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
   document.querySelector(`[onclick="nav('${page}')"]`).classList.add('active');
-  document.querySelectorAll('.page,.page-scroll').forEach(p=>{p.classList.remove('active')});
-  const el=document.getElementById('page-'+page);
-  if(el)el.classList.add('active');
-  const titles={dashboard:'Dashboard',leads:'Leads',chat:'Chat WhatsApp',financeiro:'Financeiro'};
-  document.getElementById('page-title').textContent=titles[page]||page;
-  const act=document.getElementById('topbar-actions');
-  act.innerHTML='';
-  if(page==='leads'){
-    act.innerHTML='<button class="btn btn-primary" onclick="abrirModal()">+ Novo Lead</button>';
-  }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  const titles = {dashboard:'Dashboard',leads:'Leads',chat:'Chat WhatsApp',financeiro:'Financeiro'};
+  document.getElementById('page-title').textContent = titles[page]||page;
+  const act = document.getElementById('topbar-actions');
+  act.innerHTML = '';
+  if(page==='leads') act.innerHTML = '<button class="btn btn-primary" onclick="abrirModal()">+ Novo Lead</button>';
+  if(page==='financeiro'){ carregarGastos(); renderFinanceiro(); }
   if(page==='dashboard') renderDash();
-  if(page==='financeiro') renderFinanceiro();
+  if(page==='chat') renderChatList();
 }
 
 function renderDash(){
-  if(!leads.length){fetch('/api/contatos').then(r=>r.json()).then(d=>{leads=d;renderDash()});return}
-  const fechados=leads.filter(l=>l.status==='fechado');
-  const fat=fechados.filter(l=>l.pago).reduce((s,l)=>s+(parseFloat(l.valor)||0),0);
-  const prev=fechados.filter(l=>!l.pago).reduce((s,l)=>s+(parseFloat(l.valor)||0),0);
-  const g=(gastos.meta||0)+(gastos.mdo||0);
-  const result=fat-g;
-  document.getElementById('d-leads').textContent=leads.length;
-  document.getElementById('d-fechados').textContent=fechados.length;
-  document.getElementById('d-fat').textContent=fmt(fat);
-  document.getElementById('d-prev').textContent=fmt(prev);
-  document.getElementById('d-gastos').textContent=fmt(g);
-  const re=document.getElementById('d-result');
-  re.textContent=fmt(result);
-  re.className='card-value '+(result>=0?'green':'red');
-  // funil
-  const statusMap={novo:'Novo',frio:'Frio',em_contato:'Em Contato',quente:'Quente',qualificado:'Qualificado',fechado:'Fechado',perdido:'Perdido'};
-  const counts={};
-  leads.forEach(l=>{ counts[l.status]=(counts[l.status]||0)+1 });
-  const fg=document.getElementById('funil-grid');
-  fg.innerHTML=Object.entries(statusMap).map(([k,v])=>`<div class="funil-item"><div class="count">${counts[k]||0}</div><div class="label">${v}</div></div>`).join('');
+  const g = getGastos();
+  const fechados = leads.filter(l=>l.status==='fechado');
+  const fat = fechados.filter(l=>l.pago).reduce((s,l)=>s+(parseFloat(l.valor)||0),0);
+  const prev = fechados.filter(l=>!l.pago).reduce((s,l)=>s+(parseFloat(l.valor)||0),0);
+  const totalG = g.meta + g.mdo;
+  const result = fat - totalG;
+  document.getElementById('d-leads').textContent = leads.length;
+  document.getElementById('d-fechados').textContent = fechados.length;
+  document.getElementById('d-fat').textContent = fmt(fat);
+  document.getElementById('d-prev').textContent = fmt(prev);
+  document.getElementById('d-gastos').textContent = fmt(totalG);
+  const re = document.getElementById('d-result');
+  re.textContent = fmt(result);
+  re.className = 'card-value '+(result>=0?'green':'red');
+  const statusMap = {novo:'Novo',frio:'Frio',em_contato:'Em Contato',quente:'Quente',qualificado:'Qualificado',fechado:'Fechado',perdido:'Perdido'};
+  const counts = {};
+  leads.forEach(l=>{ counts[l.status]=(counts[l.status]||0)+1; });
+  document.getElementById('funil-grid').innerHTML = Object.entries(statusMap).map(([k,v])=>`
+    <div class="funil-item"><div class="count">${counts[k]||0}</div><div class="label">${v}</div></div>`).join('');
 }
 
 function renderLeads(lista){
-  const list=lista||leads;
-  const el=document.getElementById('leads-list');
-  if(!list.length){el.innerHTML='<div style="text-align:center;color:#333;padding:40px">Nenhum lead encontrado</div>';return}
-  el.innerHTML=list.map(l=>{
-    const ini=initials(l.nome);
-    const tel=l.telefone?l.telefone.replace(/\D/g,''):'';
-    const waLink=tel?`https://wa.me/${tel}`:'#';
-    const pago=l.pago?'checked':'';
+  const list = lista || leads;
+  const el = document.getElementById('leads-list');
+  if(!list.length){ el.innerHTML='<div style="text-align:center;color:#333;padding:40px;font-size:14px">Nenhum lead encontrado</div>'; return; }
+  el.innerHTML = list.map(l=>{
+    const tel = (l.telefone||'').replace(/\D/g,'');
+    const waHref = tel ? `https://wa.me/${tel}` : '#';
+    const pago = l.pago;
     return `<div class="lead-card" onclick="abrirModal(${l.id})">
-      <div class="lead-avatar">${ini}</div>
+      <div class="lead-avatar">${ini(l.nome)}</div>
       <div class="lead-info">
         <div class="lead-name">${l.nome||'Sem nome'}</div>
-        <div class="lead-phone">${l.telefone||'—'} ${l.empresa?'· '+l.empresa:''}</div>
+        <div class="lead-phone">${l.telefone||'—'}${l.empresa?' · '+l.empresa:''}</div>
       </div>
       <div class="lead-meta">
-        ${l.valor?`<span class="lead-value">${fmt(l.valor)}</span>`:''}
-        <div class="lead-paid ${pago}" title="${l.pago?'Pago':'Não pago'}">
-          ${l.pago?`<svg viewBox="0 0 12 12" width="10" height="10"><polyline points="2,6 5,9 10,3" stroke="#000" stroke-width="2" fill="none"/></svg>`:''}
+        ${l.valor ? `<span class="lead-value">${fmt(l.valor)}</span>` : ''}
+        <div class="pago-check ${pago?'ok':''}" title="${pago?'Pago':'Não pago'}">
+          ${pago?`<svg viewBox="0 0 12 12" width="10" height="10"><polyline points="2,6 5,9 10,3" stroke="#000" stroke-width="2.5" fill="none"/></svg>`:''}
         </div>
         <span class="badge badge-${l.status||'novo'}">${(l.status||'novo').replace('_',' ')}</span>
-        <span style="font-size:11px;color:#444">${timeAgo(l.criado_em)}</span>
-        ${tel?`<a class="wa-btn" href="${waLink}" target="_blank" onclick="event.stopPropagation()" title="Abrir WhatsApp">
+        <span style="font-size:11px;color:#444;min-width:28px">${timeAgo(l.criado_em)}</span>
+        ${tel?`<a class="wa-btn" href="${waHref}" target="_blank" onclick="event.stopPropagation()" title="Abrir WhatsApp">
           <svg viewBox="0 0 24 24" width="16" height="16"><path fill="#2ecc71" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
-        </a>`:''}
+        </a>` : ''}
       </div>
     </div>`;
   }).join('');
 }
 
 function filtrarLeads(){
-  const q=document.getElementById('lead-search').value.toLowerCase();
-  const s=document.getElementById('lead-filter').value;
-  let r=leads;
-  if(q) r=r.filter(l=>(l.nome||'').toLowerCase().includes(q)||(l.telefone||'').includes(q)||(l.empresa||'').toLowerCase().includes(q));
-  if(s) r=r.filter(l=>l.status===s);
+  const q = document.getElementById('lead-search').value.toLowerCase();
+  const s = document.getElementById('lead-filter').value;
+  let r = leads;
+  if(q) r = r.filter(l=>(l.nome||'').toLowerCase().includes(q)||(l.telefone||'').includes(q)||(l.empresa||'').toLowerCase().includes(q));
+  if(s) r = r.filter(l=>l.status===s);
   renderLeads(r);
 }
 
 function renderChatList(){
-  const el=document.getElementById('chat-list');
-  if(!leads.length){el.innerHTML='<div style="padding:20px;color:#333;text-align:center;font-size:13px">Nenhum lead</div>';return}
-  el.innerHTML=leads.map(l=>`
-    <div class="chat-list-item ${contatoAtivo===l.id?'active':''}" onclick="abrirChat(${l.id},'${(l.nome||'').replace(/'/g,"\\'")}')">
-      <div class="chat-list-avatar">${initials(l.nome)}</div>
-      <div class="chat-list-info">
-        <div class="chat-list-name">${l.nome||'Sem nome'}</div>
-        <div class="chat-list-preview">${l.telefone||'—'}</div>
+  const el = document.getElementById('chat-list-panel');
+  if(!leads.length){ el.innerHTML='<div style="padding:20px;color:#333;text-align:center;font-size:13px">Nenhum lead</div>'; return; }
+  el.innerHTML = leads.map(l=>`
+    <div class="chat-item ${chatAtivoId===l.id?'active':''}" onclick="abrirChat(${l.id})">
+      <div class="chat-avatar">${ini(l.nome)}</div>
+      <div class="chat-item-info">
+        <div class="chat-item-name">${l.nome||'Sem nome'}</div>
+        <div class="chat-item-prev">${l.telefone||'—'}</div>
       </div>
     </div>`).join('');
 }
 
-async function abrirChat(id, nome){
-  contatoAtivo=id;
+async function abrirChat(id){
+  chatAtivoId = id;
   renderChatList();
-  const tel=(leads.find(l=>l.id===id)||{}).telefone||'';
-  const num=tel.replace(/\D/g,'');
-  const waLink=num?`https://wa.me/${num}`:'#';
-  document.getElementById('chat-window').innerHTML=`
-    <div class="chat-window">
+  const lead = leads.find(l=>l.id===id) || {};
+  const tel = (lead.telefone||'').replace(/\D/g,'');
+  const waHref = tel ? `https://wa.me/${tel}` : '#';
+  try {
+    const r = await fetch(`/api/conversas/${id}`);
+    const msgs = await r.json();
+    const chatMain = document.getElementById('chat-main');
+    chatMain.innerHTML = `
       <div class="chat-header">
-        <div class="chat-list-avatar">${initials(nome)}</div>
+        <div class="chat-avatar">${ini(lead.nome)}</div>
         <div style="flex:1">
-          <div style="font-size:14px;font-weight:600;color:#fff">${nome}</div>
-          <div style="font-size:11px;color:#555">${tel}</div>
+          <div style="font-size:14px;font-weight:600;color:#fff">${lead.nome||'Sem nome'}</div>
+          <div style="font-size:11px;color:#555">${lead.telefone||'—'}</div>
         </div>
-        ${num?`<a class="wa-btn" href="${waLink}" target="_blank" title="Abrir WhatsApp" style="margin-right:6px">
-          <svg viewBox="0 0 24 24" width="18" height="18"><path fill="#2ecc71" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5
+        ${tel?`<a class="wa-btn" href="${waHref}" target="_blank" title="Abrir no WhatsApp">
+          <svg viewBox="0 0 24 24" width="17" height="17"><path fill="#2ecc71" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305
