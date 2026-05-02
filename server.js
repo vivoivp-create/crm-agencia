@@ -287,3 +287,4 @@ app.listen(PORT, async () => {
   await initDB();
   console.log(`CRM rodando na porta ${PORT}`);
 });
+// v2
