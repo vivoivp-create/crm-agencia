@@ -70,7 +70,15 @@ function corrigirTelefone(telefone) {
 
 function ehMensagemDeCampanha(texto) {
   const t = texto.toLowerCase();
-  return t.includes('tenho interesse') && t.includes('mais informa');
+  return (t.includes('tenho interesse') && t.includes('mais informa')) ||
+         ehCampanhaHamburguer(texto);
+}
+
+function ehCampanhaHamburguer(texto) {
+  const t = texto.toLowerCase();
+  return (t.includes('vi seu') && t.includes('anuncio') && t.includes('hambur')) ||
+         (t.includes('anuncio') && t.includes('delivery') && t.includes('hambur')) ||
+         (t.includes('anuncio') && t.includes('trafego') && t.includes('hambur'));
 }
 
 function detectarNicho(historico) {
@@ -174,7 +182,7 @@ function buildFollowupPrompt(etapaInfo, sequencia) {
   return msgs[sequencia] || msgs[1];
 }
 
-function buildSystemPrompt(etapaInfo, ehCampanha) {
+function buildSystemPrompt(etapaInfo, ehCampanha, ehCampanhaHamb) {
   const etapa = etapaInfo.etapa;
   const nicho = etapaInfo.nicho;
 
@@ -187,7 +195,11 @@ function buildSystemPrompt(etapaInfo, ehCampanha) {
 
   if (etapa === 1) {
     if (ehCampanha) {
-      instrucaoEtapa = 'INSTRUCAO ETAPA 1 (CAMPANHA): Cliente veio de campanha e ja tem interesse. Va direto ao ponto: pergunte APENAS qual tipo de negocio: hamburguer/fast food, restaurante japones, ou outro? Sem introducao longa.';
+      if (ehCampanhaHamb) {
+        instrucaoEtapa = 'INSTRUCAO ETAPA 1 (CAMPANHA HAMBURGUER): Cliente veio do anuncio de videos virais para hamburguer. Va DIRETO ao ponto sem apresentacao. Sua UNICA tarefa: perguntar se o negocio dele e uma hamburgueria/fast food ou outro segmento. Resposta curta, ex: Oi! Vi que voce veio pelo nosso anuncio de delivery de hamburguer Voce tem uma hamburgueria ou fast food, ou atua em outro segmento?';
+      } else {
+        instrucaoEtapa = 'INSTRUCAO ETAPA 1 (CAMPANHA): Cliente veio de campanha e ja tem interesse. Va direto ao ponto: pergunte APENAS qual tipo de negocio: hamburguer/fast food, restaurante japones, ou outro? Sem introducao longa.';
+      }
     } else {
       instrucaoEtapa = 'INSTRUCAO ETAPA 1: Descubra o nicho do negocio. Pergunte de forma amigavel e curta qual o tipo de negocio: hamburguer/fast food, restaurante japones, ou outro tipo.';
     }
@@ -289,6 +301,7 @@ async function processarMensagem(telefone, mensagem) {
   try {
     const telCorrigido = corrigirTelefone(telefone);
     const ehCampanha = ehMensagemDeCampanha(mensagem);
+    const ehCampanhaHamb = ehCampanhaHamburguer(mensagem);
 
     let contato = await pool.query('SELECT * FROM contatos WHERE telefone = $1', [telCorrigido]);
     if (contato.rows.length === 0) {
@@ -341,7 +354,7 @@ async function processarMensagem(telefone, mensagem) {
       );
     }
 
-    const systemPrompt = buildSystemPrompt(etapaInfo, ehCampanha);
+    const systemPrompt = buildSystemPrompt(etapaInfo, ehCampanha, ehCampanhaHamb);
 
     const claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
