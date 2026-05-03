@@ -229,7 +229,7 @@ async function enviarMensagemWhatsApp(para, mensagem, midiaUrl, midiaTipo) {
   const url = 'https://graph.facebook.com/v17.0/' + process.env.WHATSAPP_PHONE_ID + '/messages';
   let payload;
   if (midiaUrl && midiaUrl.startsWith('http')) {
-    const tipo = (midiaTipo === 'video') ? 'video' : 'image';
+    const tipo = (midiaTipo === 'video') ? 'video' : (midiaTipo === 'audio') ? 'audio' : 'image';
     payload = { messaging_product: 'whatsapp', to: para, type: tipo };
     payload[tipo] = { link: midiaUrl };
     if (mensagem) payload[tipo].caption = mensagem;
