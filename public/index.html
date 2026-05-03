@@ -704,10 +704,11 @@ function renderRRList() {
       '<select style="background:#1a2e24;color:#ccc;border:1px solid #2a4a3a;padding:6px 8px;border-radius:6px;font-size:13px" onchange="_rrTemp[' + i + '].midia_tipo=this.value">' +
       '<option value="imagem"' + (mt==="imagem"?" selected":"") + '>Imagem</option>' +
       '<option value="video"' + (mt==="video"?" selected":"") + '>Video</option>' +
+      '<option value="audio"' + (mt==="audio"?" selected":"") + '>Audio (MP3)</option>' +
       '</select>' +
       '<input type="text" placeholder="URL da midia (https://...)" value="' + mu + '" oninput="_rrTemp[' + i + '].midia_url=this.value" style="flex:1;background:#1a2e24;color:#ccc;border:1px solid #2a4a3a;padding:6px 8px;border-radius:6px"></div>' +
       '<div style="margin-top:6px;display:flex;align-items:center;gap:8px">' +
-      '<label style="background:#1e3a2f;border:1px solid #2ecc71;color:#2ecc71;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer">Upload<input type="file" accept="image/*,video/*" style="display:none" onchange="rrUploadMidia(event,' + i + ')"></label>' +
+      '<label style="background:#1e3a2f;border:1px solid #2ecc71;color:#2ecc71;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer">Upload<input type="file" accept="image/*,video/*,audio/*" style="display:none" onchange="rrUploadMidia(event,' + i + ')"></label>' +
       (r.midia_url ? '<span style="color:#2ecc71;font-size:12px">OK: ' + (r.midia_url.length>40?r.midia_url.substring(0,40)+'...':r.midia_url) + '</span>' +
       '<button onclick="_rrTemp[' + i + '].midia_url=\'\'\'\'renderRRList()" style="background:none;border:none;color:#e74c3c;cursor:pointer" title="Remover">X</button>' :
       '<span style="color:#555;font-size:12px">Nenhuma midia</span>') +
@@ -777,7 +778,7 @@ function usarResposta(texto, midiaUrl, midiaTipo) {
     var prev = document.createElement('div');
     prev.id = 'rr-midia-preview';
     prev.style.cssText = 'background:#1a2e24;border:1px solid #2ecc71;border-radius:8px;padding:6px 10px;font-size:12px;color:#2ecc71;display:flex;align-items:center;gap:8px;margin-bottom:4px';
-    prev.innerHTML = (midiaTipo==='video'?'Video':'Imagem') + ': ' + (midiaUrl.length>40?midiaUrl.substring(0,40)+'...':midiaUrl) + ' <span onclick="limparMidiaRR()" style="cursor:pointer;color:#e74c3c;font-weight:bold">X</span>';
+    prev.innerHTML = (midiaTipo==='video'?'Video':midiaTipo==='audio'?'Audio':'Imagem') + ': ' + (midiaUrl.length>40?midiaUrl.substring(0,40)+'...':midiaUrl) + ' <span onclick="limparMidiaRR()" style="cursor:pointer;color:#e74c3c;font-weight:bold">X</span>';
     var inputArea = document.querySelector('.chat-input-area');
     if (inputArea) inputArea.insertBefore(prev, inputArea.firstChild);
   }
