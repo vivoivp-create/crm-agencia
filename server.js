@@ -225,15 +225,24 @@ function buildSystemPrompt(etapaInfo, ehCampanha, ehCampanhaHamb) {
   return 'Voce e o assistente virtual da Vigore Agencia Digital, especializada em marketing digital para restaurantes. Voce se comunica pelo WhatsApp.\n\nREGRAS ABSOLUTAS - NUNCA VIOLE:\n1. NUNCA use markdown: proibido usar #, *, **, _, nem listas com simbolos. Texto puro e simples apenas.\n2. NUNCA repita perguntas ja respondidas no historico.\n3. NUNCA volte a perguntar o nicho se ja foi identificado.\n4. NUNCA pergunte o nome antes da etapa 4.\n5. SEMPRE leia todo o historico antes de responder.\n6. Respostas curtas e diretas, linguagem informal e amigavel.\n7. Use emojis com moderacao.\n\n' + instrucaoEtapa;
 }
 
-async function enviarMensagemWhatsApp(para, mensagem) {
+async function enviarMensagemWhatsApp(para, mensagem, midiaUrl, midiaTipo) {
   const url = 'https://graph.facebook.com/v17.0/' + process.env.WHATSAPP_PHONE_ID + '/messages';
+  let payload;
+  if (midiaUrl && midiaUrl.startsWith('http')) {
+    const tipo = (midiaTipo === 'video') ? 'video' : 'image';
+    payload = { messaging_product: 'whatsapp', to: para, type: tipo };
+    payload[tipo] = { link: midiaUrl };
+    if (mensagem) payload[tipo].caption = mensagem;
+  } else {
+    payload = { messaging_product: 'whatsapp', to: para, type: 'text', text: { body: mensagem || '' } };
+  }
   const resp = await fetch(url, {
     method: 'POST',
     headers: {
       'Authorization': 'Bearer ' + process.env.WHATSAPP_TOKEN,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ messaging_product: 'whatsapp', to: para, type: 'text', text: { body: mensagem } })
+    body: JSON.stringify(payload)
   });
   const data = await resp.json();
   if (!resp.ok) console.error('Erro WhatsApp:', JSON.stringify(data));
@@ -475,11 +484,14 @@ app.get('/api/contatos/:id/conversas', async function(req, res) {
 
 app.post('/api/contatos/:id/mensagem', async function(req, res) {
   try {
-    const { mensagem } = req.body;
+    const { mensagem, midia_url, midia_tipo } = req.body;
     const contato = await pool.query('SELECT * FROM contatos WHERE id = $1', [req.params.id]);
     if (contato.rows.length === 0) return res.status(404).json({ error: 'Nao encontrado' });
-    await pool.query('INSERT INTO conversas (contato_id, mensagem, direcao) VALUES ($1,$2,$3)', [req.params.id, mensagem, 'saida']);
-    await enviarMensagemWhatsApp(contato.rows[0].telefone, mensagem);
+    const textoSalvar = mensagem || (midia_url ? '[midia: ' + (midia_tipo||'imagem') + ']' : '');
+    if (textoSalvar) {
+      await pool.query('INSERT INTO conversas (contato_id, mensagem, direcao) VALUES ($1,$2,$3)', [req.params.id, textoSalvar, 'saida']);
+    }
+    await enviarMensagemWhatsApp(contato.rows[0].telefone, mensagem, midia_url, midia_tipo);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
