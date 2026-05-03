@@ -634,13 +634,16 @@ async function enviarMensagemChat() {
   var input = document.getElementById('chat-input-text');
   if (!input || !chatLeadAtivo) return;
   var msg = input.value.trim();
-  if (!msg) return;
+  var midiaUrl = window._rrMidiaUrl || '';
+  var midiaTipo = window._rrMidiaTipo || 'imagem';
+  if (!msg && !midiaUrl) return;
   input.value = '';
+  limparMidiaRR();
   try {
     await fetch('/api/contatos/' + chatLeadAtivo + '/mensagem', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ mensagem: msg })
+      body: JSON.stringify({ mensagem: msg, midia_url: midiaUrl, midia_tipo: midiaTipo })
     });
     await carregarMensagens(chatLeadAtivo);
   } catch(e) { alert('Erro ao enviar: ' + e.message); }
@@ -688,19 +691,34 @@ function renderRRList() {
   if (!list) return;
   if (_rrTemp.length === 0) { list.innerHTML = '<div class="rr-empty">Nenhuma resposta. Clique em "+ Adicionar Resposta".</div>'; return; }
   list.innerHTML = _rrTemp.map(function(r, i) {
+    var mt = r.midia_tipo || 'imagem';
+    var mu = (r.midia_url||'').replace(/"/g,'&quot;');
     return '<div class="rr-list-item">' +
       '<div class="rr-fields">' +
       '<div><div class="rr-lbl">Atalho (ex: /ola)</div>' +
       '<input type="text" placeholder="/atalho" value="' + (r.atalho||'').replace(/"/g,'&quot;') + '" oninput="_rrTemp[' + i + '].atalho=this.value"></div>' +
-      '<div><div class="rr-lbl">Mensagem</div>' +
-      '<textarea placeholder="Texto da resposta rápida..." oninput="_rrTemp[' + i + '].texto=this.value">' + (r.texto||'').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</textarea></div>' +
+      '<div><div class="rr-lbl">Mensagem (opcional se tiver midia)</div>' +
+      '<textarea placeholder="Texto da resposta rapida..." oninput="_rrTemp[' + i + '].texto=this.value">' + (r.texto||'').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</textarea></div>' +
+      '<div style="margin-top:8px"><div class="rr-lbl">Midia (imagem ou video) - opcional</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;margin-top:4px">' +
+      '<select style="background:#1a2e24;color:#ccc;border:1px solid #2a4a3a;padding:6px 8px;border-radius:6px;font-size:13px" onchange="_rrTemp[' + i + '].midia_tipo=this.value">' +
+      '<option value="imagem"' + (mt==="imagem"?" selected":"") + '>Imagem</option>' +
+      '<option value="video"' + (mt==="video"?" selected":"") + '>Video</option>' +
+      '</select>' +
+      '<input type="text" placeholder="URL da midia (https://...)" value="' + mu + '" oninput="_rrTemp[' + i + '].midia_url=this.value" style="flex:1;background:#1a2e24;color:#ccc;border:1px solid #2a4a3a;padding:6px 8px;border-radius:6px"></div>' +
+      '<div style="margin-top:6px;display:flex;align-items:center;gap:8px">' +
+      '<label style="background:#1e3a2f;border:1px solid #2ecc71;color:#2ecc71;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer">Upload<input type="file" accept="image/*,video/*" style="display:none" onchange="rrUploadMidia(event,' + i + ')"></label>' +
+      (r.midia_url ? '<span style="color:#2ecc71;font-size:12px">OK: ' + (r.midia_url.length>40?r.midia_url.substring(0,40)+'...':r.midia_url) + '</span>' +
+      '<button onclick="_rrTemp[' + i + '].midia_url=\'\'\'\'renderRRList()" style="background:none;border:none;color:#e74c3c;cursor:pointer" title="Remover">X</button>' :
+      '<span style="color:#555;font-size:12px">Nenhuma midia</span>') +
+      '</div></div>' +
       '</div>' +
       '<button class="rr-del-btn" onclick="_rrTemp.splice(' + i + ',1);renderRRList()" title="Remover">&times;</button>' +
       '</div>';
   }).join('');
 }
 function rrAdicionarItem() {
-  _rrTemp.push({atalho:'',texto:''});
+  _rrTemp.push({atalho:'',texto:'',midia_url:'',midia_tipo:'imagem'});
   renderRRList();
   var list = document.getElementById('rr-list');
   if (list) list.scrollTop = list.scrollHeight;
@@ -740,17 +758,39 @@ function renderRRPopup() {
     textSpan.textContent = (r.texto || '').split('\n').join(' ');
     div.appendChild(titleSpan);
     div.appendChild(textSpan);
-    div.addEventListener('click', (function(texto) {
-      return function() { usarResposta(texto); fecharRRPopup(); };
-    })(r.texto || ''));
+    var hasMedia = r.midia_url ? ' [midia]' : '';
+    titleSpan.textContent = (r.atalho || '') + hasMedia;
+    div.addEventListener('click', (function(texto, midiaUrl, midiaTipo) {
+      return function() { usarResposta(texto, midiaUrl, midiaTipo); fecharRRPopup(); };
+    })(r.texto || '', r.midia_url || '', r.midia_tipo || 'imagem'));
     el.appendChild(div);
   });
 }
-function usarResposta(texto) {
+function usarResposta(texto, midiaUrl, midiaTipo) {
   var input = document.getElementById('chat-input-text');
   if (!input) return;
-  input.value = texto;
+  input.value = texto || '';
+  window._rrMidiaUrl = midiaUrl || '';
+  window._rrMidiaTipo = midiaTipo || 'imagem';
+  limparMidiaPreview();
+  if (midiaUrl) {
+    var prev = document.createElement('div');
+    prev.id = 'rr-midia-preview';
+    prev.style.cssText = 'background:#1a2e24;border:1px solid #2ecc71;border-radius:8px;padding:6px 10px;font-size:12px;color:#2ecc71;display:flex;align-items:center;gap:8px;margin-bottom:4px';
+    prev.innerHTML = (midiaTipo==='video'?'Video':'Imagem') + ': ' + (midiaUrl.length>40?midiaUrl.substring(0,40)+'...':midiaUrl) + ' <span onclick="limparMidiaRR()" style="cursor:pointer;color:#e74c3c;font-weight:bold">X</span>';
+    var inputArea = document.querySelector('.chat-input-area');
+    if (inputArea) inputArea.insertBefore(prev, inputArea.firstChild);
+  }
   input.focus();
+}
+function limparMidiaPreview() {
+  var prev = document.getElementById('rr-midia-preview');
+  if (prev) prev.remove();
+}
+function limparMidiaRR() {
+  window._rrMidiaUrl = '';
+  window._rrMidiaTipo = '';
+  limparMidiaPreview();
 }
 document.addEventListener('click', function(e) {
   var popup = document.getElementById('rr-popup');
