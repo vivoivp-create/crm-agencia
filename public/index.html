@@ -725,23 +725,32 @@ function renderRRPopup() {
   var el = document.getElementById('rr-popup-content');
   if (!el) return;
   if (lista.length === 0) {
-    el.innerHTML = '<div class="rr-empty">Sem respostas salvas. <span style="color:#2ecc71;cursor:pointer" onclick="fecharRRPopup();abrirModalRR()">Adicionar agora</span></div>';
-  } else {
-    el.innerHTML = lista.map(function(r) {
-      var textoSafe = (r.texto||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
-      return '<div class="rr-item" onclick="usarResposta(\'' + textoSafe + "\')" >" +
-        '<span class="rr-item-title">' + (r.atalho||'').replace(/</g,'&lt;') + '</span>' +
-        '<span class="rr-item-text">' + (r.texto||'').replace(/</g,'&lt;').replace(/\n/g,' ') + '</span>' +
-        '</div>';
-    }).join('');
+    el.innerHTML = '<div class="rr-empty">Sem respostas. <span style="color:#2ecc71;cursor:pointer" onclick="fecharRRPopup();abrirModalRR()">Adicionar</span></div>';
+    return;
   }
+  el.innerHTML = '';
+  lista.forEach(function(r) {
+    var div = document.createElement('div');
+    div.className = 'rr-item';
+    var titleSpan = document.createElement('span');
+    titleSpan.className = 'rr-item-title';
+    titleSpan.textContent = r.atalho || '';
+    var textSpan = document.createElement('span');
+    textSpan.className = 'rr-item-text';
+    textSpan.textContent = (r.texto || '').split('\n').join(' ');
+    div.appendChild(titleSpan);
+    div.appendChild(textSpan);
+    div.addEventListener('click', (function(texto) {
+      return function() { usarResposta(texto); fecharRRPopup(); };
+    })(r.texto || ''));
+    el.appendChild(div);
+  });
 }
 function usarResposta(texto) {
   var input = document.getElementById('chat-input-text');
   if (!input) return;
-  input.value = texto.replace(/\\n/g,'\n');
+  input.value = texto;
   input.focus();
-  fecharRRPopup();
 }
 document.addEventListener('click', function(e) {
   var popup = document.getElementById('rr-popup');
