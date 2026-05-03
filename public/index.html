@@ -122,6 +122,35 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
 .pago-check{display:flex;align-items:center;gap:6px;font-size:12px;color:#555}
 .pago-check input[type=checkbox]{accent-color:#2ecc71;width:15px;height:15px}
 @media(max-width:700px){.sidebar{display:none}.fin-container{grid-template-columns:1fr}.modal-grid{grid-template-columns:1fr}.chat-list{width:100%}}
+
+  .rr-btn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:#1e3a2f;border:1px solid #2ecc71;color:#2ecc71;border-radius:8px;cursor:pointer;transition:all .2s;flex-shrink:0;font-size:16px;margin-right:4px}
+  .rr-btn:hover{background:#2ecc71;color:#000}
+  .chat-input-area{position:relative}
+  .rr-popup{position:absolute;bottom:65px;left:0;right:0;background:#111;border:1px solid #2a2a2a;border-radius:10px;max-height:280px;overflow-y:auto;z-index:200;box-shadow:0 -4px 20px rgba(0,0,0,.5);display:none}
+  .rr-popup.open{display:block}
+  .rr-popup-header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #1e1e1e}
+  .rr-popup-title{font-size:12px;color:#2ecc71;font-weight:600;text-transform:uppercase;letter-spacing:.5px;flex:1}
+  .rr-popup-edit{font-size:11px;color:#555;cursor:pointer;text-decoration:underline}
+  .rr-popup-edit:hover{color:#2ecc71}
+  .rr-popup-close{background:none;border:none;color:#555;cursor:pointer;font-size:18px;line-height:1;padding:0}
+  .rr-popup-close:hover{color:#e0e0e0}
+  .rr-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid #1a1a1a;transition:.15s;display:flex;align-items:flex-start;gap:10px}
+  .rr-item:hover{background:#1a2e1f}
+  .rr-item:last-child{border-bottom:none}
+  .rr-item-title{font-size:11px;font-weight:700;color:#2ecc71;min-width:80px;flex-shrink:0;padding-top:1px}
+  .rr-item-text{font-size:12px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .rr-empty{padding:20px;text-align:center;color:#444;font-size:13px}
+  .modal-rr{width:600px}
+  .rr-list-item{background:#0d0d0d;border:1px solid #1e1e1e;border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px}
+  .rr-list-item .rr-fields{flex:1;display:flex;flex-direction:column;gap:8px}
+  .rr-list-item input,.rr-list-item textarea{background:#111;border:1px solid #2a2a2a;border-radius:5px;padding:7px 10px;color:#e0e0e0;font-size:12px;outline:none;width:100%;font-family:inherit}
+  .rr-list-item input:focus,.rr-list-item textarea:focus{border-color:#2ecc71}
+  .rr-list-item textarea{resize:vertical;min-height:60px}
+  .rr-lbl{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.4px;margin-bottom:1px}
+  .rr-del-btn{background:none;border:none;color:#555;cursor:pointer;font-size:22px;padding:0 4px;flex-shrink:0;line-height:1;margin-top:2px}
+  .rr-del-btn:hover{color:#e74c3c}
+  .rr-add-btn{display:flex;align-items:center;gap:6px;background:#1e3a2f;border:1px dashed #2ecc71;color:#2ecc71;border-radius:8px;padding:9px 14px;cursor:pointer;font-size:13px;font-weight:500;width:100%;justify-content:center;transition:.2s;margin-top:4px}
+  .rr-add-btn:hover{background:#2ecc71;color:#000}
 </style>
 </head>
 <body>
@@ -237,6 +266,17 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-rr">
+  <div class="modal modal-rr">
+    <h2>&#9889; Respostas Rápidas</h2>
+    <div id="rr-list" style="max-height:380px;overflow-y:auto;margin-bottom:4px"></div>
+    <button class="rr-add-btn" onclick="rrAdicionarItem()">+ Adicionar Resposta</button>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModalRR()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarRespostasRapidas()">Salvar</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-lead">
   <div class="modal">
     <h2 id="modal-title">Novo Lead</h2>
@@ -551,6 +591,8 @@ async function abrirChat(leadId) {
     '</div>' +
     '<div class="chat-messages" id="chat-msgs"></div>' +
     '<div class="chat-input-area">' +
+    '<div id="rr-popup" class="rr-popup"><div class="rr-popup-header"><span class="rr-popup-title">&#9889; Respostas</span><span class="rr-popup-edit" onclick="fecharRRPopup();abrirModalRR()">&#9998; Editar</span><button class="rr-popup-close" onclick="fecharRRPopup()">&times;</button></div><div id="rr-popup-content"></div></div>' +
+    '<button class="rr-btn" onclick="toggleRRPopup()" title="Respostas Rápidas">&#9889;</button>' +
     '<textarea class="chat-input" id="chat-input-text" placeholder="Digite uma mensagem..." rows="1" onkeydown="chatEnterEnviar(event)"></textarea>' +
     '<button class="chat-send-btn" onclick="enviarMensagemChat()">Enviar</button>' +
     '</div>';
@@ -631,6 +673,82 @@ function carregarFinanceiro() {
     }
   }).catch(function(e){ console.error(e); });
 }
+
+// ============ RESPOSTAS RÁPIDAS ============
+var _rrTemp = [];
+function abrirModalRR() {
+  _rrTemp = JSON.parse(JSON.stringify(carregarRR()));
+  renderRRList();
+  document.getElementById('modal-rr').classList.add('open');
+}
+function fecharModalRR() { document.getElementById('modal-rr').classList.remove('open'); }
+function carregarRR() { try { return JSON.parse(localStorage.getItem('respostas_rapidas') || '[]'); } catch(e) { return []; } }
+function renderRRList() {
+  var list = document.getElementById('rr-list');
+  if (!list) return;
+  if (_rrTemp.length === 0) { list.innerHTML = '<div class="rr-empty">Nenhuma resposta. Clique em "+ Adicionar Resposta".</div>'; return; }
+  list.innerHTML = _rrTemp.map(function(r, i) {
+    return '<div class="rr-list-item">' +
+      '<div class="rr-fields">' +
+      '<div><div class="rr-lbl">Atalho (ex: /ola)</div>' +
+      '<input type="text" placeholder="/atalho" value="' + (r.atalho||'').replace(/"/g,'&quot;') + '" oninput="_rrTemp[' + i + '].atalho=this.value"></div>' +
+      '<div><div class="rr-lbl">Mensagem</div>' +
+      '<textarea placeholder="Texto da resposta rápida..." oninput="_rrTemp[' + i + '].texto=this.value">' + (r.texto||'').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</textarea></div>' +
+      '</div>' +
+      '<button class="rr-del-btn" onclick="_rrTemp.splice(' + i + ',1);renderRRList()" title="Remover">&times;</button>' +
+      '</div>';
+  }).join('');
+}
+function rrAdicionarItem() {
+  _rrTemp.push({atalho:'',texto:''});
+  renderRRList();
+  var list = document.getElementById('rr-list');
+  if (list) list.scrollTop = list.scrollHeight;
+}
+function salvarRespostasRapidas() {
+  var validas = _rrTemp.filter(function(r){ return r.atalho.trim() && r.texto.trim(); });
+  localStorage.setItem('respostas_rapidas', JSON.stringify(validas));
+  fecharModalRR();
+  renderRRPopup();
+}
+function toggleRRPopup() {
+  var popup = document.getElementById('rr-popup');
+  if (!popup) return;
+  popup.classList.toggle('open');
+  if (popup.classList.contains('open')) renderRRPopup();
+}
+function fecharRRPopup() { var popup = document.getElementById('rr-popup'); if (popup) popup.classList.remove('open'); }
+function renderRRPopup() {
+  var popup = document.getElementById('rr-popup');
+  if (!popup) return;
+  var lista = carregarRR();
+  var el = document.getElementById('rr-popup-content');
+  if (!el) return;
+  if (lista.length === 0) {
+    el.innerHTML = '<div class="rr-empty">Sem respostas salvas. <span style="color:#2ecc71;cursor:pointer" onclick="fecharRRPopup();abrirModalRR()">Adicionar agora</span></div>';
+  } else {
+    el.innerHTML = lista.map(function(r) {
+      var textoSafe = (r.texto||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
+      return '<div class="rr-item" onclick="usarResposta(\'' + textoSafe + "\')" >" +
+        '<span class="rr-item-title">' + (r.atalho||'').replace(/</g,'&lt;') + '</span>' +
+        '<span class="rr-item-text">' + (r.texto||'').replace(/</g,'&lt;').replace(/\n/g,' ') + '</span>' +
+        '</div>';
+    }).join('');
+  }
+}
+function usarResposta(texto) {
+  var input = document.getElementById('chat-input-text');
+  if (!input) return;
+  input.value = texto.replace(/\\n/g,'\n');
+  input.focus();
+  fecharRRPopup();
+}
+document.addEventListener('click', function(e) {
+  var popup = document.getElementById('rr-popup');
+  if (!popup || !popup.classList.contains('open')) return;
+  if (!popup.contains(e.target) && !e.target.closest('.rr-btn')) popup.classList.remove('open');
+});
+document.getElementById('modal-rr').addEventListener('click', function(e) { if (e.target === this) fecharModalRR(); });
 </script>
 </body>
 </html>
