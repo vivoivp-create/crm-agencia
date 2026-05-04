@@ -500,6 +500,17 @@ app.post('/api/contatos/:id/mensagem', async function(req, res) {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Marcar mensagens de entrada como lidas
+app.post('/api/contatos/:id/conversas/marcar-lidas', async function(req, res) {
+  try {
+    await pool.query(
+      "UPDATE conversas SET lida=true WHERE contato_id=$1 AND direcao='entrada' AND lida=false",
+      [req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.post('/api/upload-audio', express.raw({ type: '*/*', limit: '10mb' }), async function(req, res) {
   try {
     var body = req.body;
