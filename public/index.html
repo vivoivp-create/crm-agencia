@@ -865,5 +865,95 @@ document.addEventListener('click', function(e) {
 });
 document.getElementById('modal-rr').addEventListener('click', function(e) { if (e.target === this) fecharModalRR(); });
 </script>
+
+  <!-- Sistema de Notificação de Mensagens Não Lidas -->
+  <style>
+    .chat-list-item { position: relative; }
+    .unread-badge {
+      position: absolute; top: 50%; right: 12px; transform: translateY(-50%);
+      background: #2ecc71; color: #000; font-size: 10px; font-weight: 700;
+      min-width: 18px; height: 18px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 5px; z-index: 10;
+      box-shadow: 0 0 6px rgba(46,204,113,0.7);
+      animation: pulse-badge 2s infinite;
+    }
+    @keyframes pulse-badge {
+      0%   { box-shadow: 0 0 6px rgba(46,204,113,0.7); }
+      50%  { box-shadow: 0 0 14px rgba(46,204,113,1); }
+      100% { box-shadow: 0 0 6px rgba(46,204,113,0.7); }
+    }
+    .chat-list-item.has-unread .cli-name { color: #2ecc71 !important; }
+    .chat-list-item.has-unread { background: rgba(46,204,113,0.05) !important; border-left: 3px solid #2ecc71 !important; }
+    .chat-list-item.has-unread:hover { background: rgba(46,204,113,0.1) !important; }
+    .chat-list-item.active.has-unread { background: rgb(26,46,31) !important; border-left: 3px solid #2ecc71 !important; }
+  </style>
+  <script>
+    // Aguarda o DOM estar pronto e as funções do chat carregadas
+    function iniciarSistemaBadges() {
+      if (typeof abrirChat === 'undefined' || typeof renderChatList === 'undefined') {
+        setTimeout(iniciarSistemaBadges, 500);
+        return;
+      }
+      window._unreadCache = {};
+      window._unreadFetching = {};
+
+      window.atualizarBadgeConversa = async function(chatItem) {
+        const m = (chatItem.getAttribute('onclick') || '').match(/abrirChat\((\d+)\)/);
+        if (!m) return;
+        const id = m[1];
+        if (window._unreadFetching[id]) return;
+        try {
+          window._unreadFetching[id] = true;
+          const r = await fetch('/api/contatos/' + id + '/conversas');
+          if (!r.ok) return;
+          const msgs = await r.json();
+          const n = msgs.filter(msg => msg.direcao === 'entrada' && msg.lida === false).length;
+          window._unreadCache[id] = n;
+          const old = chatItem.querySelector('.unread-badge');
+          if (old) old.remove();
+          if (n > 0) {
+            chatItem.classList.add('has-unread');
+            const badge = document.createElement('div');
+            badge.className = 'unread-badge';
+            badge.textContent = n > 99 ? '99+' : n;
+            badge.title = n + ' mensagem(ns) não lida(s) do cliente';
+            chatItem.appendChild(badge);
+          } else {
+            chatItem.classList.remove('has-unread');
+          }
+        } catch(e) {} finally { window._unreadFetching[id] = false; }
+      };
+
+      window.atualizarTodosOsBadges = async function() {
+        const items = Array.from(document.querySelectorAll('.chat-list-items .chat-list-item'));
+        for (let i = 0; i < items.length; i += 4) {
+          await Promise.all(items.slice(i, i+4).map(it => window.atualizarBadgeConversa(it)));
+          if (i + 4 < items.length) await new Promise(r => setTimeout(r, 200));
+        }
+      };
+
+      const _origAbrirChat = window.abrirChat;
+      window.abrirChat = async function(id) {
+        _origAbrirChat.call(this, id);
+        try {
+          await fetch('/api/contatos/' + id + '/conversas/marcar-lidas', { method: 'POST' });
+          const item = document.querySelector('.chat-list-item[onclick="abrirChat(' + id + ')"]');
+          if (item) { const b = item.querySelector('.unread-badge'); if (b) b.remove(); item.classList.remove('has-unread'); window._unreadCache[id] = 0; }
+        } catch(e) {}
+      };
+
+      const _origRender = window.renderChatList;
+      window.renderChatList = function() { const r = _origRender.apply(this, arguments); setTimeout(() => window.atualizarTodosOsBadges(), 500); return r; };
+
+      const _origCarregar = window.carregarListaChat;
+      window.carregarListaChat = function() { const r = _origCarregar.apply(this, arguments); if (r && r.then) r.then(() => setTimeout(() => window.atualizarTodosOsBadges(), 800)); else setTimeout(() => window.atualizarTodosOsBadges(), 800); return r; };
+
+      window.atualizarTodosOsBadges();
+      if (window._unreadPollingInterval) clearInterval(window._unreadPollingInterval);
+      window._unreadPollingInterval = setInterval(() => window.atualizarTodosOsBadges(), 30000);
+    }
+    document.addEventListener('DOMContentLoaded', iniciarSistemaBadges);
+  </script>
 </body>
 </html>
