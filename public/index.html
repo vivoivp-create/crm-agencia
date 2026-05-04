@@ -107,6 +107,10 @@ body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#e0e0e0;display:
 .chat-input:focus{border-color:#2ecc71}
 .chat-send-btn{background:#2ecc71;color:#000;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-weight:600;transition:.2s;align-self:flex-end}
 .chat-send-btn:hover{background:#27ae60}
+.chat-mic-btn{background:#1a1a1a;color:#e0e0e0;border:1px solid #2a2a2a;border-radius:8px;padding:10px 12px;cursor:pointer;font-size:18px;transition:.2s;align-self:flex-end;line-height:1}
+.chat-mic-btn:hover{background:#2a2a2a;border-color:#2ecc71}
+.chat-mic-btn.recording{background:#c0392b;border-color:#e74c3c;color:#fff;animation:pulse-mic 1s infinite}
+@keyframes pulse-mic{0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,0.4)}50%{box-shadow:0 0 0 8px rgba(231,76,60,0)}}
 .no-chat{flex:1;display:flex;align-items:center;justify-content:center;color:#444;font-size:14px}
 .fin-container{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 .fin-card{background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:20px}
@@ -594,6 +598,7 @@ async function abrirChat(leadId) {
     '<div id="rr-popup" class="rr-popup"><div class="rr-popup-header"><span class="rr-popup-title">&#9889; Respostas</span><span class="rr-popup-edit" onclick="fecharRRPopup();abrirModalRR()">&#9998; Editar</span><button class="rr-popup-close" onclick="fecharRRPopup()">&times;</button></div><div id="rr-popup-content"></div></div>' +
     '<button class="rr-btn" onclick="toggleRRPopup()" title="Respostas Rápidas">&#9889;</button>' +
     '<textarea class="chat-input" id="chat-input-text" placeholder="Digite uma mensagem..." rows="1" onkeydown="chatEnterEnviar(event)"></textarea>' +
+    '<button class="chat-mic-btn" id="chat-mic-btn" onclick="toggleGravarAudio()" title="Gravar áudio">🎤</button>' +
     '<button class="chat-send-btn" onclick="enviarMensagemChat()">Enviar</button>' +
     '</div>';
 
@@ -647,6 +652,66 @@ async function enviarMensagemChat() {
     });
     await carregarMensagens(chatLeadAtivo);
   } catch(e) { alert('Erro ao enviar: ' + e.message); }
+}
+
+// ============ AUDIO RECORDING ============
+var _mediaRecorder = null;
+var _audioChunks = [];
+var _isRecording = false;
+
+async function toggleGravarAudio() {
+  if (_isRecording) {
+    pararGravacao();
+  } else {
+    await iniciarGravacao();
+  }
+}
+
+async function iniciarGravacao() {
+  try {
+    var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _audioChunks = [];
+    _mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+    _mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) _audioChunks.push(e.data); };
+    _mediaRecorder.onstop = async function() {
+      stream.getTracks().forEach(function(t) { t.stop(); });
+      var blob = new Blob(_audioChunks, { type: 'audio/webm;codecs=opus' });
+      await enviarAudioChat(blob);
+    };
+    _mediaRecorder.start();
+    _isRecording = true;
+    var btn = document.getElementById('chat-mic-btn');
+    if (btn) { btn.classList.add('recording'); btn.title = 'Parar gravação'; btn.textContent = '⏹'; }
+  } catch(e) {
+    alert('Erro ao acessar microfone: ' + e.message);
+  }
+}
+
+function pararGravacao() {
+  if (_mediaRecorder && _isRecording) {
+    _mediaRecorder.stop();
+    _isRecording = false;
+    var btn = document.getElementById('chat-mic-btn');
+    if (btn) { btn.classList.remove('recording'); btn.title = 'Gravar áudio'; btn.textContent = '🎤'; }
+  }
+}
+
+async function enviarAudioChat(blob) {
+  if (!chatLeadAtivo) return;
+  try {
+    var fd = new FormData();
+    fd.append('audio', blob, 'audio.webm');
+    fd.append('lead_id', chatLeadAtivo);
+    var uploadResp = await fetch('/api/upload-audio', { method: 'POST', body: fd });
+    if (!uploadResp.ok) throw new Error('Falha no upload do áudio');
+    var uploadData = await uploadResp.json();
+    await fetch('/api/contatos/' + chatLeadAtivo + '/mensagem', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ mensagem: '', midia_url: uploadData.url, midia_tipo: 'audio' })
+    });
+    await carregarMensagens(chatLeadAtivo);
+  } catch(e) { alert('Erro ao enviar áudio: ' + e.message); }
 }
 
 // ============ FINANCEIRO ============
