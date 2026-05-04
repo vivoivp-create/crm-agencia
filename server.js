@@ -2,11 +2,15 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -494,6 +498,20 @@ app.post('/api/contatos/:id/mensagem', async function(req, res) {
     await enviarMensagemWhatsApp(contato.rows[0].telefone, mensagem, midia_url, midia_tipo);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/upload-audio', express.raw({ type: '*/*', limit: '10mb' }), async function(req, res) {
+  try {
+    var body = req.body;
+    if (!body || !body.length) return res.status(400).json({ error: 'Nenhum audio recebido' });
+    var filename = 'audio_' + crypto.randomBytes(8).toString('hex') + '.webm';
+    var filepath = path.join(UPLOADS_DIR, filename);
+    fs.writeFileSync(filepath, body);
+    var baseUrl = req.protocol + '://' + req.get('host');
+    res.json({ url: baseUrl + '/uploads/' + filename });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/dashboard', async function(req, res) {
