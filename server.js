@@ -51,6 +51,22 @@ async function initDB() {
     ALTER TABLE contatos ADD COLUMN IF NOT EXISTS followup_1h_enviado BOOLEAN DEFAULT false;
     ALTER TABLE contatos ADD COLUMN IF NOT EXISTS followup_12h_enviado BOOLEAN DEFAULT false;
     ALTER TABLE contatos ADD COLUMN IF NOT EXISTS followup_20h_enviado BOOLEAN DEFAULT false;
+    ALTER TABLE contatos ADD COLUMN IF NOT EXISTS bot_pausado BOOLEAN DEFAULT false;
+    CREATE TABLE IF NOT EXISTS respostas_rapidas (
+      id SERIAL PRIMARY KEY,
+      atalho VARCHAR(50) NOT NULL,
+      mensagem TEXT,
+      midia_tipo VARCHAR(20),
+      midia_url TEXT,
+      criado_em TIMESTAMP DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS kanban_colunas (
+      id SERIAL PRIMARY KEY,
+      nome VARCHAR(100) NOT NULL,
+      cor VARCHAR(30) DEFAULT 'blue',
+      posicao INTEGER DEFAULT 99,
+      criado_em TIMESTAMP DEFAULT NOW()
+    );
   `);
   console.log('DB iniciado');
 }
@@ -346,6 +362,12 @@ async function processarMensagem(telefone, mensagem) {
 
     const etapaInfo = detectarEtapa(historico);
 
+    // Se o bot estiver pausado para este contato, nao responder automaticamente
+    if (contato.rows[0].bot_pausado) {
+      console.log('Bot pausado para', telefone, '- mensagem recebida mas nao respondida pelo bot');
+      return;
+    }
+
     if (etapaInfo.etapa >= 2 && contato.rows[0].status === 'novo') {
       await pool.query("UPDATE contatos SET status='em_contato', atualizado_em=NOW() WHERE id=$1", [contatoId]);
     }
@@ -556,6 +578,81 @@ app.put('/api/projetos/:id', async function(req, res) {
     const result = await pool.query(
       'UPDATE projetos SET titulo=$1, descricao=$2, responsavel=$3, status=$4, progresso=$5, prazo=$6, atualizado_em=NOW() WHERE id=$7 RETURNING *',
       [titulo, descricao, responsavel, status, progresso, prazo, req.params.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PATCH route for updating specific fields (Kanban drag & drop)
+app.patch('/api/contatos/:id', async function(req, res) {
+  try {
+    const fields = Object.keys(req.body);
+    const values = Object.values(req.body);
+    if (fields.length === 0) return res.status(400).json({ error: 'No fields provided' });
+    const setClause = fields.map((f, i) => f + '=$' + (i+1)).join(', ');
+    const result = await pool.query(
+      'UPDATE contatos SET ' + setClause + ', atualizado_em=NOW() WHERE id=$' + (fields.length+1) + ' RETURNING *',
+      [...values, req.params.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Respostas rapidas
+app.get('/api/respostas-rapidas', async function(req, res) {
+  try {
+    const result = await pool.query('SELECT * FROM respostas_rapidas ORDER BY atalho ASC');
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/respostas-rapidas', async function(req, res) {
+  try {
+    const { atalho, mensagem, midia_tipo, midia_url } = req.body;
+    const result = await pool.query(
+      'INSERT INTO respostas_rapidas (atalho, mensagem, midia_tipo, midia_url) VALUES ($1,$2,$3,$4) RETURNING *',
+      [atalho, mensagem, midia_tipo||null, midia_url||null]
+    );
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.delete('/api/respostas-rapidas/:id', async function(req, res) {
+  try {
+    await pool.query('DELETE FROM respostas_rapidas WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Kanban colunas
+app.get('/api/kanban-colunas', async function(req, res) {
+  try {
+    const result = await pool.query('SELECT * FROM kanban_colunas ORDER BY posicao ASC, id ASC');
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/kanban-colunas', async function(req, res) {
+  try {
+    const { nome, cor, posicao } = req.body;
+    const result = await pool.query(
+      'INSERT INTO kanban_colunas (nome, cor, posicao) VALUES ($1,$2,$3) RETURNING *',
+      [nome, cor||'blue', posicao||99]
+    );
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.delete('/api/kanban-colunas/:id', async function(req, res) {
+  try {
+    await pool.query('DELETE FROM kanban_colunas WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Notas do lead
+app.patch('/api/contatos/:id/notas', async function(req, res) {
+  try {
+    const { notas } = req.body;
+    const result = await pool.query(
+      'UPDATE contatos SET notas=$1, atualizado_em=NOW() WHERE id=$2 RETURNING *',
+      [notas, req.params.id]
     );
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
