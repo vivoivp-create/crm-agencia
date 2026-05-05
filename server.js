@@ -658,5 +658,45 @@ app.patch('/api/contatos/:id/notas', async function(req, res) {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Endpoint de diagnostico do bot
+app.get('/api/bot-status', async function(req, res) {
+  try {
+    const phoneId = process.env.WHATSAPP_PHONE_ID;
+    const token = process.env.WHATSAPP_TOKEN;
+    const claudeKey = process.env.CLAUDE_API_KEY;
+    
+    // Test WhatsApp API token validity
+    let waStatus = 'unknown';
+    let waError = null;
+    try {
+      const waResp = await fetch('https://graph.facebook.com/v18.0/' + phoneId, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const waData = await waResp.json();
+      waStatus = waResp.ok ? 'ok' : 'error';
+      waError = waResp.ok ? null : JSON.stringify(waData.error || waData);
+    } catch(e) {
+      waStatus = 'fetch_error';
+      waError = e.message;
+    }
+    
+    // Count DB stats
+    const contatosResult = await pool.query('SELECT COUNT(*) as total, COUNT(CASE WHEN bot_pausado THEN 1 END) as pausados FROM contatos');
+    const convsResult = await pool.query('SELECT COUNT(*) as total FROM conversas WHERE criado_em > NOW() - INTERVAL\'24 hours\'');
+    
+    res.json({
+      whatsapp: { status: waStatus, phone_id: phoneId ? phoneId.substring(0,8)+\'...' : 'NOT SET', token_set: !!token, error: waError },
+      claude: { key_set: !!claudeKey },
+      db: { 
+        contatos: contatosResult.rows[0].total,
+        bot_pausados: contatosResult.rows[0].pausados,
+        conversas_24h: convsResult.rows[0].total
+      }
+    });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, function() { console.log('Servidor rodando na porta ' + PORT); });
