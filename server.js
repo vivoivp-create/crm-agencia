@@ -101,14 +101,21 @@ function ehCampanhaHamburguer(texto) {
     (t.includes('anuncio') && t.includes('trafego') && t.includes('hambur'));
 }
 
+// CORRIGIDO: agora le APENAS mensagens do cliente (role: 'user'), nao do bot
 function detectarNicho(historico) {
-  const texto = historico.map(function(m) { return m.content; }).join(' ').toLowerCase();
-  if (texto.includes('hambur') || texto.includes('burger') || texto.includes('lanche') || texto.includes('fast food')) {
-    return 'hamburguer';
-  }
-  if (texto.includes('japones') || texto.includes('sushi') || texto.includes('temaki') || texto.includes('oriental')) {
-    return 'japones';
-  }
+  const textoCliente = historico
+    .filter(function(m) { return m.role === 'user'; })
+    .map(function(m) { return m.content; })
+    .join(' ')
+    .toLowerCase();
+
+  if (/hambur|burger|lanche|smash|chedda|cheeseburger/i.test(textoCliente)) return 'hamburguer';
+  if (/japon|sushi|temaki|oriental|sashimi|hot roll|uramaki/i.test(textoCliente)) return 'japones';
+  if (/pizza|pizzaria/i.test(textoCliente)) return 'pizza';
+  if (/acai|açaí|sorvete|gelato/i.test(textoCliente)) return 'acai';
+  if (/marmita|marmitex|comida caseira|fitness|low carb/i.test(textoCliente)) return 'marmita';
+  if (/doce|confeitaria|bolo|brigadeiro|sobremesa/i.test(textoCliente)) return 'doces';
+  if (/saudavel|saudável|natural|vegano|vegetarian/i.test(textoCliente)) return 'saudavel';
   return null;
 }
 
@@ -136,43 +143,99 @@ function detectarNomeCliente(historico) {
   return null;
 }
 
-// Detecta em qual etapa do funil a conversa esta
+function detectarCidade(historico) {
+  for (let i = historico.length - 1; i >= 0; i--) {
+    const m = historico[i];
+    if (m.role === 'user') {
+      const match = m.content.match(/(?:cidade|moro em|estou em|sou de|aqui em|meu negocio[\s\S]*?em)\s+([A-Z][a-zA-Z\s]+?)(?:[\.\,\!\?\n]|$)/i);
+      if (match) return match[1].trim();
+    }
+  }
+  return null;
+}
+
+// CORRIGIDO: detecta se o cliente REALMENTE escolheu um pacote, nao so mencionou
+function detectarPacoteEscolhido(historico) {
+  for (let i = historico.length - 1; i >= 0; i--) {
+    const m = historico[i];
+    if (m.role !== 'user') continue;
+    const t = m.content.toLowerCase();
+    // Frases claras de escolha
+    if (/(quero|vou querer|escolho|prefiro|fica[r]? com|me manda|fechar?|topo|bora|vamos)\s+(o\s+)?(basico|básico|standard|max plus|maxplus|max)/i.test(m.content)) {
+      return true;
+    }
+    if (/^(basico|básico|standard|max plus|maxplus|max)$/i.test(m.content.trim())) {
+      return true;
+    }
+    if (/(o|esse|este)\s+(basico|básico|standard|max plus|maxplus|max)\s+(mesmo|entao|então|pra mim)/i.test(m.content)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// CORRIGIDO: detecta se o bot ja deu boas-vindas em alguma mensagem anterior
+function botJaDeuBoasVindas(historico) {
+  return historico.some(function(m) {
+    if (m.role !== 'assistant') return false;
+    const t = m.content.toLowerCase();
+    return t.includes('bem-vindo') || t.includes('bem vindo') || t.includes('ola!') || /^ol[áa]/i.test(m.content.trim());
+  });
+}
+
+function botJaPerguntouNicho(historico) {
+  return historico.some(function(m) {
+    if (m.role !== 'assistant') return false;
+    return /qual.*nicho|trabalha com.*hambur|trabalha com.*japon|qual.*delivery|qual.*ramo|tipo de comida/i.test(m.content);
+  });
+}
+
+function botJaEnviouPortfolio(historico) {
+  return historico.some(function(m) {
+    return m.role === 'assistant' && m.content.includes('youtube.com/shorts');
+  });
+}
+
+function botJaApresentouPacotes(historico) {
+  return historico.some(function(m) {
+    if (m.role !== 'assistant') return false;
+    return /R\$\s*69|R\$\s*89|R\$\s*197|R\$\s*297|basico.*standard.*max/i.test(m.content);
+  });
+}
+
+// REESCRITO: deteccao de etapa baseada em estado real da conversa
 function detectarEtapa(historico) {
-  const texto = historico.map(function(m) { return m.content; }).join(' ').toLowerCase();
   const nicho = detectarNicho(historico);
 
-  // Etapa 6: lead enviado para Fabiano
+  // Etapa 6: bot ja mandou contato do Fabiano
   const botMandouFabiano = historico.some(function(m) {
-    return m.role === 'assistant' && m.content.includes('wa.me/5543996877898');
+    return m.role === 'assistant' && m.content.includes('5543996877898');
   });
   if (botMandouFabiano) return { etapa: 6, nicho: nicho };
 
-  // Etapa 5: bot pediu dados (nome/instagram) mas ainda nao recebeu
-  const botPediuDados = historico.some(function(m) {
-    return m.role === 'assistant' && /nome|instagram|whatsapp|cidade/i.test(m.content) && /me passa|qual.*seu|pode me informar/i.test(m.content);
-  });
-  const userRespondeuDados = historico.some(function(m) {
-    return m.role === 'user' && (/@[\w.]+/.test(m.content) || /meu nome|me chamo|sou o|sou a/i.test(m.content));
-  });
-  if (botPediuDados && userRespondeuDados) return { etapa: 6, nicho: nicho };
-  if (botPediuDados) return { etapa: 5, nicho: nicho };
+  // Etapa 5: cliente respondeu pedido de dados (passou nome e/ou instagram)
+  const userRespondeuDados = (detectarNomeCliente(historico) !== null) || (detectarInstagram(historico) !== null);
+  if (detectarPacoteEscolhido(historico) && userRespondeuDados) {
+    return { etapa: 6, nicho: nicho };
+  }
+  if (detectarPacoteEscolhido(historico)) {
+    return { etapa: 5, nicho: nicho };
+  }
 
-  // Etapa 4: cliente escolheu um pacote
-  const clienteEscolheuPacote = historico.some(function(m) {
-    return m.role === 'user' && /basico|standard|max plus|basico|padrao/i.test(m.content);
-  });
-  if (clienteEscolheuPacote) return { etapa: 4, nicho: nicho };
+  // Etapa 4: bot ja apresentou pacotes, esperando escolha
+  if (botJaApresentouPacotes(historico)) {
+    return { etapa: 4, nicho: nicho };
+  }
 
-  // Etapa 3: bot enviou portfolio, aguardando interesse
-  const botEnviouPortfolio = historico.some(function(m) {
-    return m.role === 'assistant' && m.content.includes('youtube.com');
-  });
-  if (botEnviouPortfolio && nicho) return { etapa: 3, nicho: nicho };
+  // Etapa 3: bot enviou portfolio, esperando reacao
+  if (botJaEnviouPortfolio(historico) && nicho) {
+    return { etapa: 3, nicho: nicho };
+  }
 
-  // Etapa 2: nicho identificado, portfolio nao enviado ainda
+  // Etapa 2: nicho identificado, ainda nao mandou portfolio
   if (nicho) return { etapa: 2, nicho: nicho };
 
-  // Etapa 1: inicio, nicho nao identificado
+  // Etapa 1: nicho ainda nao identificado
   return { etapa: 1, nicho: null };
 }
 
@@ -180,99 +243,218 @@ function vendaNaoDesenvolveu(etapa) {
   return etapa < 6;
 }
 
-// Mensagens de follow-up por etapa e sequencia
-// Segue o tom da Vigore: direto, confiante, sem frescura
+// Helpers para escolher portfolio e produto baseado no nicho
+function getPortfolioPorNicho(nicho) {
+  if (nicho === 'japones') {
+    return [
+      'https://www.youtube.com/shorts/n78ISZ6acwk',
+      'https://www.youtube.com/shorts/jrbzf5kYPuY',
+      'https://www.youtube.com/shorts/36uq3MaaHic'
+    ];
+  }
+  // hamburguer e demais nichos usam portfolio do Burger Viral
+  return [
+    'https://www.youtube.com/shorts/Fy1022ucX0M',
+    'https://www.youtube.com/shorts/qBIgF4gzOCM',
+    'https://www.youtube.com/shorts/bQj0tqhX10s'
+  ];
+}
+
+function getProdutoPorNicho(nicho) {
+  return nicho === 'japones' ? 'Método Fome Visual' : 'Método Burger Viral';
+}
+
+function getValorBasicoPorNicho(nicho) {
+  return nicho === 'japones' ? '89,90' : '69,90';
+}
+
+function getNichoLabel(nicho) {
+  const labels = {
+    hamburguer: 'hamburgueria',
+    japones: 'comida japonesa',
+    pizza: 'pizzaria',
+    acai: 'açaí',
+    marmita: 'marmita',
+    doces: 'confeitaria',
+    saudavel: 'comida saudavel'
+  };
+  return labels[nicho] || 'delivery';
+}
+
+// Mensagens de follow-up curtas, no tom da Vigore
 function buildFollowupMsg(etapaInfo, sequencia) {
   const nicho = etapaInfo.nicho;
-  const nichoLabel = nicho === 'hamburguer' ? 'hamburguer' : (nicho === 'japones' ? 'japones' : 'delivery');
-  const produto = nicho === 'japones' ? 'Fome Visual' : 'Burger Viral';
-  const portfolio = nicho === 'japones' ? 'https://www.youtube.com/shorts/36uq3MaaHic' : 'https://www.youtube.com/shorts/Fy1022ucX0M';
+  const nichoLabel = getNichoLabel(nicho);
+  const portfolio = getPortfolioPorNicho(nicho)[0];
+  const valorBasico = getValorBasicoPorNicho(nicho);
 
   const msgs = {
     1: {
-      1: `Oi! Voce viu nosso conteudo de ${nichoLabel}?\n\n${portfolio}\n\nIsso e o que entregamos. Faz sentido pro seu negocio?`,
-      2: `Ei, so passando rapidinho.\n\nNossos clientes de ${nichoLabel} estao vendendo mais com o ${produto}. Quer ver como funciona?`,
-      3: `Ultima mensagem por hoje.\n\nSe quiser turbinar o visual do seu ${nichoLabel} e vender mais, e so responder. Zero risco, voce paga so depois de aprovar.`
+      1: 'Oi! So pra confirmar, qual o ramo do seu delivery?\n\nHamburguer, japonesa, pizza, outro?',
+      2: 'Ei, ainda da pra conversar?\n\nQuero te mostrar como o conteudo visual aumenta venda no delivery. Qual o seu ramo?',
+      3: 'Ultima passada por hoje.\n\nSe quiser saber como vender mais com video viral e foto 4K, e so me dizer o ramo.'
     },
     2: {
-      1: `Oi! Vi que nao chegou a ver o portfolio.\n\n${portfolio}\n\nDa pra sentir o desejo so de olhar. Qual pacote faz mais sentido pra voce?`,
-      2: `Ei! Ainda por aqui?\n\nVoce so paga depois de ver e aprovar o material. Zero risco. O que travou?`,
-      3: `Ultima chamada!\n\nAgenda fechando essa semana. Se quiser garantir, me responde agora.`
+      1: 'Oi! Da uma olhada no que entregamos pra ' + nichoLabel + ':\n\n' + portfolio + '\n\nFaz sentido pro seu negocio?',
+      2: 'Ei, so passando.\n\nNossos clientes de ' + nichoLabel + ' estao vendendo mais com video viral. Quer ver como funciona?',
+      3: 'Ultima mensagem.\n\nVoce paga so depois de aprovar o material. Zero risco. Bora testar?'
     },
     3: {
-      1: `Oi! Ficou com duvida sobre os pacotes?\n\nBasico R$${nicho === 'japones' ? '89,90' : '69,90'} | Standard R$197,90 | Max Plus R$297,90\n\nQual encaixa melhor no seu momento?`,
-      2: `Ei! Lembrando que voce recebe, aprova e so entao paga.\n\nZero risco. Qual pacote voce toparia testar?`,
-      3: `Ultimo aviso! Fechando agenda essa semana.\n\nMe fala o pacote e a gente ja comeca. Voce paga so depois de aprovar.`
+      1: 'Oi! O que achou do material?\n\nDa pra sentir o desejo so de olhar. Faz sentido pra voce?',
+      2: 'Ei, ainda por ai?\n\nSe travou em alguma duvida, me fala. Posso te explicar melhor.',
+      3: 'Ultima chamada.\n\nAgenda fechando essa semana. Se quiser garantir, me responde.'
     },
     4: {
-      1: `Oi! Falta pouco pra fechar.\n\nSo me passa seu nome e o @ do instagram que a gente da andamento!`,
-      2: `Ei! Simples assim: nome + @ do instagram = a gente comeca.\n\nMe manda ai?`,
-      3: `Ultimo recado!\n\nO Fabiano ta esperando seus dados pra comecar. Nome e @ do instagram, pode mandar!`
+      1: 'Oi! Ficou alguma duvida nos pacotes?\n\nBasico R$' + valorBasico + ' / Standard R$197,90 / Max Plus R$297,90\n\nQual encaixa melhor?',
+      2: 'Ei! Lembrando: voce recebe, aprova e so depois paga.\n\nZero risco. Qual pacote topa testar?',
+      3: 'Ultimo aviso. Fechando agenda.\n\nMe fala o pacote e a gente comeca.'
+    },
+    5: {
+      1: 'Oi! Falta pouco pra fechar.\n\nMe passa nome da empresa, @ do Instagram e cidade que ja damos andamento.',
+      2: 'Ei! Simples: nome + @ Instagram + cidade = a gente comeca.\n\nMe manda?',
+      3: 'Ultimo recado.\n\nO Fabiano ta esperando seus dados pra iniciar. Pode mandar.'
     }
   };
 
-  const etapaKey = etapaInfo.etapa <= 4 ? etapaInfo.etapa : 4;
+  const etapaKey = Math.min(etapaInfo.etapa, 5);
   const grupo = msgs[etapaKey] || msgs[1];
   return grupo[sequencia] || grupo[1];
 }
 
-function buildSystemPrompt(etapaInfo, ehCampanha, ehCampanhaHamb) {
+// REESCRITO: prompt baseado no script real da Vigore + foco em qualificar e mandar pro Fabiano
+function buildSystemPrompt(etapaInfo, ehCampanha, ehCampanhaHamb, historico) {
   const etapa = etapaInfo.etapa;
-  const nicho = etapaInfo.nicho || "";
-  const ehHamburguer = nicho === "hamburguer" || ehCampanhaHamb;
-  const ehJapones = nicho === "japones";
-  const nichoLabel = ehHamburguer ? "hamburguer" : (ehJapones ? "japonesa" : "");
-  const pacotesHamb = "BASICO R$69,90: 1 video + 8 fotos 4K + 30 roteiros | STANDARD R$197,90: 3 videos + 20 fotos 4K + 40 roteiros | MAX PLUS R$297,90: 5 videos + 35 fotos 4K + 50 roteiros";
-  const pacotesJap  = "BASICO R$89,90: 1 video + 8 fotos 4K + 30 roteiros | STANDARD R$197,90: 3 videos + 20 fotos 4K + 40 roteiros | MAX PLUS R$297,90: 5 videos + 35 fotos 4K + 50 roteiros";
-  const pacotes = ehJapones ? pacotesJap : pacotesHamb;
+  const nicho = etapaInfo.nicho || '';
+  const nichoLabel = getNichoLabel(nicho);
+  const produto = getProdutoPorNicho(nicho);
+  const valorBasico = getValorBasicoPorNicho(nicho);
+  const portfolios = getPortfolioPorNicho(nicho);
+  const linkPrincipal = portfolios[0];
 
-  // Monta instrucao de etapa especifica — sem margem para o Claude improvisar
-  let instrucaoEtapa = "";
-  if (etapa === 1) {
-    instrucaoEtapa = "ETAPA 1 — IDENTIFICAR NICHO\nA sua UNICA tarefa agora e perguntar o nicho. Responda EXATAMENTE assim (sem adicionar mais nada):\n\"Voce trabalha com hamburguer, comida japonesa ou outro nicho?\"";
-  } else if (etapa === 2) {
-    if (ehHamburguer) {
-      instrucaoEtapa = "ETAPA 2 — ENVIAR PORTFOLIO HAMBURGUER\nO cliente ja disse que trabalha com hamburguer. Mande o portfolio com impacto visual. Responda assim:\n\"Carne na chapa. Queijo derretendo. Molho escorrendo.\\n\\nhttps://www.youtube.com/shorts/Fy1022ucX0M\\n\\nO cliente ve isso e ja ta pedindo antes de abrir o delivery. Faz sentido pra voce?\"\nNao adicione mais nada. Nao repita boas-vindas. Nao pergunte o nicho de novo.";
-    } else if (ehJapones) {
-      instrucaoEtapa = "ETAPA 2 — ENVIAR PORTFOLIO JAPONES\nO cliente ja disse que trabalha com comida japonesa. Mande o portfolio com impacto visual. Responda assim:\n\"Faca cortando salmao. Brilho da peca. Montagem do sushi.\\n\\nhttps://www.youtube.com/shorts/36uq3MaaHic\\n\\nO desejo ja venceu antes da primeira mordida. Faz sentido pra voce?\"\nNao adicione mais nada. Nao repita boas-vindas. Nao pergunte o nicho de novo.";
-    } else {
-      instrucaoEtapa = "ETAPA 2 — NICHO IDENTIFICADO\nO cliente informou o nicho. Mostre o portfolio do Burger Viral e pergunte se faz sentido.";
-    }
-  } else if (etapa === 3) {
-    instrucaoEtapa = "ETAPA 3 — INTERESSE CONFIRMADO\nO cliente mostrou interesse. Apresente os pacotes e pergunte qual faz sentido. Lembre: cliente so paga depois de aprovar. Use os valores: " + pacotes;
-  } else if (etapa === 4) {
-    instrucaoEtapa = "ETAPA 4 — PACOTE ESCOLHIDO\nCliente escolheu um pacote. Solicite: nome da empresa, @ do Instagram, WhatsApp e cidade.";
-  } else if (etapa === 5) {
-    instrucaoEtapa = "ETAPA 5 — COLETANDO DADOS\nAguardando os dados do cliente (nome, Instagram, WhatsApp, cidade). Confirme o que ja recebeu e peca o que falta.";
-  } else {
-    instrucaoEtapa = "ETAPA 6 — FECHAMENTO\nDados coletados. Informe que o Fabiano vai entrar em contato: wa.me/5543996877898";
+  const jaDeuBoasVindas = botJaDeuBoasVindas(historico);
+  const jaPerguntouNicho = botJaPerguntouNicho(historico);
+  const jaEnviouPortfolio = botJaEnviouPortfolio(historico);
+  const jaApresentouPacotes = botJaApresentouPacotes(historico);
+
+  // Roteiro narrativo por nicho (do arquivo 04_ROTEIROS.txt)
+  let ganchoNicho = '';
+  if (nicho === 'hamburguer') {
+    ganchoNicho = 'Carne na chapa. Chiado da gordura. Queijo derretendo.';
+  } else if (nicho === 'japones') {
+    ganchoNicho = 'Faca cortando o salmao. Brilho da peca. Montagem do sushi.';
+  } else if (nicho === 'pizza') {
+    ganchoNicho = 'Mussarela puxando. Borda dourada. Forno a lenha.';
+  } else if (nicho === 'acai') {
+    ganchoNicho = 'Acai cremoso. Cobertura caindo. Brilho da fruta.';
+  } else if (nicho === 'marmita') {
+    ganchoNicho = 'Comida fresca. Cores vivas. Marmita montada na hora.';
+  } else if (nicho === 'doces') {
+    ganchoNicho = 'Brilho do chocolate. Recheio escorrendo. Textura cremosa.';
+  } else if (nicho === 'saudavel') {
+    ganchoNicho = 'Cores vivas. Ingredientes frescos. Comida que ja entra pelo olho.';
   }
 
-  return `VOCE E O BOT DE VENDAS DA VIGORE AGENCIA DIGITAL.
-EMPRESA: Vigore Agencia Digital | RESPONSAVEL: Fabiano
-MISSAO: vender conteudo visual para delivery (videos virais, fotos 4K, roteiros prontos)
+  // Instrucao especifica por etapa
+  let instrucaoEtapa = '';
 
-=== REGRAS ABSOLUTAS — NUNCA QUEBRE ===
-1. NUNCA diga "estou aqui para ajudar", "fico a disposicao", "posso ajudar", "um momento", "vou verificar"
-2. NUNCA use emojis (exceto quando o cliente usar primeiro)
-3. NUNCA repita boas-vindas se ja foi feita
-4. NUNCA pergunte o nicho de novo se o cliente ja informou
-5. SEMPRE finalizar com uma pergunta direta
-6. MAXIMO 4 linhas por mensagem
-7. Tom: humano, direto, confiante, comercial
-8. NAO use asteriscos para negrito — escreva em texto simples
+  if (etapa === 1) {
+    if (jaPerguntouNicho) {
+      instrucaoEtapa = 'JA PERGUNTOU NICHO ANTES.\nO cliente nao informou o ramo ainda. Reformule a pergunta de forma diferente, curta. Exemplos: "Qual o ramo do seu delivery?" ou "Trabalha com qual tipo de comida?". NAO repita a mesma frase de antes. Maximo 2 linhas.';
+    } else if (!jaDeuBoasVindas) {
+      instrucaoEtapa = 'PRIMEIRA MENSAGEM.\nApresente em UMA linha quem somos e pergunte o ramo. Modelo:\n"Aqui e a Vigore, criamos conteudo visual pra delivery vender mais. Voce trabalha com qual tipo de comida?"\nNao escreva mais nada.';
+    } else {
+      instrucaoEtapa = 'JA DEU BOAS-VINDAS, MAS NICHO AINDA NAO IDENTIFICADO.\nNAO REPITA a apresentacao. Pergunte direto o ramo. Exemplo: "Qual o ramo do seu delivery? Hambur, japonesa, pizza, outro?". Maximo 2 linhas.';
+    }
+  }
+
+  else if (etapa === 2) {
+    instrucaoEtapa = 'NICHO IDENTIFICADO: ' + nichoLabel.toUpperCase() + '\nMande o portfolio com IMPACTO VISUAL no inicio. Modelo:\n"' + ganchoNicho + '\\n\\n' + linkPrincipal + '\\n\\nCliente ve isso e ja pede antes de abrir o delivery. Faz sentido pra voce?"\nNao adicione mais nada. NAO repita boas-vindas. NAO pergunte o nicho de novo.';
+  }
+
+  else if (etapa === 3) {
+    if (jaApresentouPacotes) {
+      instrucaoEtapa = 'INTERESSE CONFIRMADO E PACOTES JA APRESENTADOS.\nPergunte qual pacote o cliente prefere. NAO repita os valores se ja foram mostrados. Maximo 2 linhas.';
+    } else {
+      instrucaoEtapa = 'INTERESSE CONFIRMADO. APRESENTE OS PACOTES DO ' + produto.toUpperCase() + '.\nFormato exato:\n"Temos 3 opcoes:\\n\\nBasico R$' + valorBasico + ' — 1 video + 8 fotos 4K + 30 roteiros\\nStandard R$197,90 — 3 videos + 20 fotos 4K + 40 roteiros\\nMax Plus R$297,90 — 5 videos + 35 fotos 4K + 50 roteiros\\n\\nVoce so paga depois de receber e aprovar. Qual faz mais sentido?"';
+    }
+  }
+
+  else if (etapa === 4) {
+    instrucaoEtapa = 'PACOTES APRESENTADOS, AGUARDANDO ESCOLHA.\nO cliente esta avaliando. Responda duvidas e reforce: "voce paga so depois de aprovar". Finalize com: "qual pacote faz mais sentido pra voce?". Maximo 4 linhas.';
+  }
+
+  else if (etapa === 5) {
+    instrucaoEtapa = 'CLIENTE ESCOLHEU PACOTE. COLETAR DADOS.\nPeca: nome da empresa, @ do Instagram e cidade. Confirme o que ja recebeu, peca o que falta. Modelo:\n"Boa escolha! Pra dar andamento, me passa:\\n\\n- Nome da empresa\\n- @ do Instagram\\n- Cidade\\n\\nDepois disso o Fabiano fala com voce direto."\nMaximo 5 linhas.';
+  }
+
+  else {
+    instrucaoEtapa = 'DADOS COLETADOS. PASSAR PARA O FABIANO.\nModelo:\n"Pronto! Vou te encaminhar pro Fabiano (responsavel) que ja vai cuidar do seu projeto.\\n\\nFala com ele aqui: wa.me/5543996877898\\n\\nPode mandar oi que ja sabe da sua escolha."';
+  }
+
+  return `VOCE E O ATENDENTE COMERCIAL DA VIGORE AGENCIA DIGITAL VIA WHATSAPP.
+
+=== EMPRESA ===
+Vigore Agencia Digital. Responsavel: Fabiano.
+Criamos conteudo visual que aumenta desejo, retencao e vendas para delivery.
+NAO vendemos videos. Vendemos DESEJO VISUAL.
+
+=== SERVICOS ===
+- Videos virais
+- Fotos profissionais 4K
+- Roteiros prontos
+
+=== PRODUTOS ===
+Metodo Burger Viral (hamburgueria e demais nichos): Basico R$69,90 | Standard R$197,90 | Max Plus R$297,90
+Metodo Fome Visual (japonesa): Basico R$89,90 | Standard R$197,90 | Max Plus R$297,90
+Pacotes incluem: video viral + fotos 4K + roteiros prontos
+
+=== TOM DE VOZ (OBRIGATORIO) ===
+- Humano, curto, direto, comercial, confiante
+- Maximo 4 linhas por mensagem
+- Texto simples, sem asteriscos para negrito
+- Sem emojis (so se o cliente usar primeiro)
+- SEMPRE finalizar com pergunta direta
+
+=== FRASES PROIBIDAS (NUNCA USAR) ===
+- "estou aqui para ajudar"
+- "fico a disposicao"
+- "posso ajudar com mais alguma duvida"
+- "vou verificar"
+- "um momento"
+
+=== REGRAS DE VENDA ===
+1. Se cliente perguntar valor: mostrar imediatamente
+2. Se cliente perguntar como funciona: explicar curto
+3. Se cliente mostrar interesse: pedir nome da empresa, Instagram, cidade
+4. Sempre finalizar com: "faz sentido?", "qual pacote gostou mais?", "quer ver uma ideia?"
+5. NUNCA oferecer agencia/servico geral. Foco no produto: video + foto + roteiro
 
 === OBJECOES ===
-- DESCONTO: "Valor ja e o menor pra esse nivel. Voce recebe, aprova e so paga. Zero risco. O que travou?"
+- DESCONTO: "Valor ja e o menor pra esse nivel. Voce recebe, aprova e so paga depois. Zero risco."
 - PRAZO: Basico 1-2 dias | Standard 2-4 dias | Max Plus 3-5 dias
-- QUER FALAR COM HUMANO: "Claro! Fala com o Fabiano direto: wa.me/5543996877898"
-- OUTROS NICHOS (pizza, etc): atende normalmente com pacotes do Burger Viral
+- DUVIDA / MEDO: "Voce so paga apos aprovar o material. Zero risco."
+- QUER FALAR COM HUMANO: "Claro. Fala com o Fabiano: wa.me/5543996877898"
+
+=== FUNIL ===
+Etapa 1: identificar nicho
+Etapa 2: enviar portfolio com gancho visual
+Etapa 3: apresentar pacotes
+Etapa 4: aguardar escolha do pacote
+Etapa 5: coletar nome + Instagram + cidade
+Etapa 6: passar para o Fabiano (wa.me/5543996877898)
+
+=== CONTEXTO ATUAL DESTA CONVERSA ===
+Etapa atual: ${etapa}
+Nicho do cliente: ${nicho || 'nao identificado ainda'}
+Bot ja deu boas-vindas: ${jaDeuBoasVindas ? 'SIM — NAO REPITA' : 'nao'}
+Bot ja perguntou nicho: ${jaPerguntouNicho ? 'SIM — NAO REPITA A MESMA PERGUNTA' : 'nao'}
+Bot ja enviou portfolio: ${jaEnviouPortfolio ? 'SIM — NAO MANDE OUTRA VEZ' : 'nao'}
+Bot ja apresentou pacotes: ${jaApresentouPacotes ? 'SIM — NAO REPITA OS VALORES' : 'nao'}
 
 === SUA TAREFA AGORA ===
 ${instrucaoEtapa}
 `;
 }
-
 
 async function enviarMensagemWhatsApp(para, mensagem, midiaUrl, midiaTipo) {
   const url = 'https://graph.facebook.com/v17.0/' + process.env.WHATSAPP_PHONE_ID + '/messages';
@@ -296,15 +478,9 @@ async function enviarMensagemWhatsApp(para, mensagem, midiaUrl, midiaTipo) {
 }
 
 // Sistema de follow-up dentro da janela de 24h da API oficial do WhatsApp
-// A API so permite mensagens fora de template dentro de 24h da ultima mensagem do USUARIO
-// Follow-up 1: 1h sem resposta do usuario
-// Follow-up 2: 6h sem resposta do usuario
-// Follow-up 3: 20h sem resposta do usuario (ultimo antes de fechar janela de 24h)
 async function processarFollowups() {
   try {
     const agora = new Date();
-    // Busca apenas leads ativos onde a ultima mensagem DO USUARIO foi < 24h atras
-    // Isso garante que ainda estamos dentro da janela de 24h da API
     const leads = await pool.query(`
       SELECT * FROM contatos
       WHERE status IN ('novo', 'em_contato', 'qualificado')
@@ -317,14 +493,11 @@ async function processarFollowups() {
       const ultimaMsgUsuario = new Date(contato.ultima_msg_usuario_em);
       const diffHoras = (agora - ultimaMsgUsuario) / (1000 * 60 * 60);
 
-      // Nao envia follow-up se a ultima mensagem foi do bot (evita spam)
-      // Verifica se a ultima mensagem na conversa foi do bot
       const ultimaMsgResult = await pool.query(
         'SELECT direcao FROM conversas WHERE contato_id = $1 ORDER BY criado_em DESC LIMIT 1',
         [contato.id]
       );
       const ultimaDirecao = ultimaMsgResult.rows[0] ? ultimaMsgResult.rows[0].direcao : 'entrada';
-      // Só envia follow-up se a ultima mensagem ja foi do bot (ou seja, usuario nao respondeu)
       if (ultimaDirecao !== 'saida') continue;
 
       const historicoRaw = await pool.query(
@@ -338,7 +511,6 @@ async function processarFollowups() {
       const etapaInfo = detectarEtapa(historico);
       if (!vendaNaoDesenvolveu(etapaInfo.etapa)) continue;
 
-      // Follow-up 1h (primeira tentativa)
       if (diffHoras >= 1 && diffHoras < 24 && !contato.followup_1h_enviado) {
         const msg = buildFollowupMsg(etapaInfo, 1);
         await enviarMensagemWhatsApp(contato.telefone, msg);
@@ -347,7 +519,6 @@ async function processarFollowups() {
         console.log('Follow-up 1h enviado para', contato.telefone);
       }
 
-      // Follow-up 6h (segunda tentativa)
       if (diffHoras >= 6 && diffHoras < 24 && !contato.followup_12h_enviado) {
         const msg = buildFollowupMsg(etapaInfo, 2);
         await enviarMensagemWhatsApp(contato.telefone, msg);
@@ -356,7 +527,6 @@ async function processarFollowups() {
         console.log('Follow-up 6h enviado para', contato.telefone);
       }
 
-      // Follow-up 20h (ultima tentativa antes de fechar janela 24h)
       if (diffHoras >= 20 && diffHoras < 24 && !contato.followup_20h_enviado) {
         const msg = buildFollowupMsg(etapaInfo, 3);
         await enviarMensagemWhatsApp(contato.telefone, msg);
@@ -370,8 +540,38 @@ async function processarFollowups() {
   }
 }
 
-// Verifica follow-ups a cada 5 minutos
 setInterval(processarFollowups, 5 * 60 * 1000);
+
+// NOVO: agrupador de mensagens rapidas
+// Quando o cliente manda varias mensagens em sequencia (ex: 3 mensagens em 5 segundos),
+// o bot espera um pouco e responde uma unica vez considerando todas
+const mensagensPendentes = new Map(); // telefone -> { timer, mensagens: [], ultimaChegada }
+const DEBOUNCE_MS = 8000; // espera 8 segundos depois da ultima mensagem
+
+function agendarProcessamento(telefone, mensagem) {
+  const agora = Date.now();
+
+  if (mensagensPendentes.has(telefone)) {
+    const pendente = mensagensPendentes.get(telefone);
+    clearTimeout(pendente.timer);
+    pendente.mensagens.push(mensagem);
+    pendente.ultimaChegada = agora;
+    pendente.timer = setTimeout(() => {
+      const todas = pendente.mensagens.join('\n');
+      mensagensPendentes.delete(telefone);
+      processarMensagem(telefone, todas).catch(console.error);
+    }, DEBOUNCE_MS);
+    return;
+  }
+
+  const pendente = { mensagens: [mensagem], ultimaChegada: agora, timer: null };
+  pendente.timer = setTimeout(() => {
+    const todas = pendente.mensagens.join('\n');
+    mensagensPendentes.delete(telefone);
+    processarMensagem(telefone, todas).catch(console.error);
+  }, DEBOUNCE_MS);
+  mensagensPendentes.set(telefone, pendente);
+}
 
 async function processarMensagem(telefone, mensagem) {
   try {
@@ -379,7 +579,6 @@ async function processarMensagem(telefone, mensagem) {
     const ehCampanha = ehMensagemDeCampanha(mensagem);
     const ehCampanhaHamb = ehCampanhaHamburguer(mensagem);
 
-    // Busca ou cria contato
     let contato = await pool.query('SELECT * FROM contatos WHERE telefone = $1', [telCorrigido]);
     if (contato.rows.length === 0) {
       const novo = await pool.query(
@@ -391,16 +590,10 @@ async function processarMensagem(telefone, mensagem) {
     const contatoId = contato.rows[0].id;
     const botPausado = contato.rows[0].bot_pausado;
 
-    // Salva a mensagem de entrada ANTES de buscar historico
     await pool.query('INSERT INTO conversas (contato_id, mensagem, direcao) VALUES ($1,$2,$3)', [contatoId, mensagem, 'entrada']);
 
-    // Atualiza ultima_msg_usuario_em (APENAS quando usuario manda mensagem)
-    // Isso e crucial para o controle da janela de 24h do follow-up
-    // NAO resetamos os flags de follow-up aqui - eles so resetam quando o usuario responde
-    // após ter sido marcado como perdido
     const statusAtual = contato.rows[0].status;
     if (statusAtual === 'perdido') {
-      // Usuario voltou! Reseta tudo e começa novo ciclo
       await pool.query(
         `UPDATE contatos SET ultima_msg_usuario_em=NOW(), ultima_mensagem_em=NOW(),
          followup_1h_enviado=false, followup_12h_enviado=false, followup_20h_enviado=false,
@@ -408,20 +601,17 @@ async function processarMensagem(telefone, mensagem) {
         [contatoId]
       );
     } else {
-      // Atualiza timestamp da ultima mensagem do usuario
       await pool.query(
         'UPDATE contatos SET ultima_msg_usuario_em=NOW(), ultima_mensagem_em=NOW(), atualizado_em=NOW() WHERE id=$1',
         [contatoId]
       );
     }
 
-    // Se bot pausado, nao responde automaticamente
     if (botPausado) {
       console.log('Bot pausado para', telefone, '- mensagem recebida mas nao respondida pelo bot');
       return;
     }
 
-    // Busca historico APOS salvar a mensagem de entrada
     const historicoRaw = await pool.query(
       'SELECT * FROM conversas WHERE contato_id = $1 ORDER BY criado_em ASC LIMIT 30',
       [contatoId]
@@ -433,11 +623,10 @@ async function processarMensagem(telefone, mensagem) {
 
     const etapaInfo = detectarEtapa(historico);
 
-    // Atualiza status do contato baseado na etapa
     if (etapaInfo.etapa >= 2 && contato.rows[0].status === 'novo') {
       await pool.query("UPDATE contatos SET status='em_contato', atualizado_em=NOW() WHERE id=$1", [contatoId]);
     }
-    if (etapaInfo.etapa >= 4 && (contato.rows[0].status === 'novo' || contato.rows[0].status === 'em_contato')) {
+    if (etapaInfo.etapa >= 5 && (contato.rows[0].status === 'novo' || contato.rows[0].status === 'em_contato')) {
       const nomeDetectado = detectarNomeCliente(historico);
       const instagramDetectado = detectarInstagram(historico);
       const nichoDetectado = etapaInfo.nicho;
@@ -447,8 +636,7 @@ async function processarMensagem(telefone, mensagem) {
       );
     }
 
-    // Chama Claude com historico completo e etapa correta
-    const systemPrompt = buildSystemPrompt(etapaInfo, ehCampanha, ehCampanhaHamb);
+    const systemPrompt = buildSystemPrompt(etapaInfo, ehCampanha, ehCampanhaHamb, historico);
     const claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -470,7 +658,6 @@ async function processarMensagem(telefone, mensagem) {
     }
     const respostaBot = claudeData.content[0].text;
 
-    // Salva resposta e envia
     await pool.query('INSERT INTO conversas (contato_id, mensagem, direcao) VALUES ($1,$2,$3)', [contatoId, respostaBot, 'saida']);
     await enviarMensagemWhatsApp(telCorrigido, respostaBot);
   } catch (err) {
@@ -488,7 +675,7 @@ app.get('/webhook', function(req, res) {
   }
 });
 
-// Webhook receiver
+// Webhook receiver — agora usa o agendador para agrupar mensagens rapidas
 app.post('/webhook', async function(req, res) {
   res.sendStatus(200);
   try {
@@ -500,7 +687,7 @@ app.post('/webhook', async function(req, res) {
         if (!value.messages) continue;
         for (const msg of value.messages) {
           if (msg.type !== 'text') continue;
-          await processarMensagem(msg.from, msg.text.body);
+          agendarProcessamento(msg.from, msg.text.body);
         }
       }
     }
