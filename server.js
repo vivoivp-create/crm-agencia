@@ -440,7 +440,7 @@ app.get('/api/bot-status', async function(req, res) {
     
     // Count DB stats
     const contatosResult = await pool.query('SELECT COUNT(*) as total, COUNT(CASE WHEN bot_pausado THEN 1 END) as pausados FROM contatos');
-    const convsResult = await pool.query('SELECT COUNT(*) as total FROM conversas WHERE criado_em > NOW() - INTERVAL'24 hours'');
+    const convsResult = await pool.query('SELECT COUNT(*) as total FROM conversas WHERE criado_em > NOW() - INTERVAL \'24 hours\');
     
     res.json({
       whatsapp: { status: waStatus, phone_id: phoneId ? phoneId.substring(0,8)+'...' : 'NOT SET', token_set: !!token, error: waError },
